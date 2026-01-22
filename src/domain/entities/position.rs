@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use crate::domain::entities::errors::PositionValueError;
 
-struct PositionUuid {
+#[derive(PartialEq, Clone, Debug)]
+pub struct PositionUuid {
     id: Uuid,
 }
 
@@ -22,6 +23,7 @@ impl PositionUuid {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Company {
     name: String,
 }
@@ -38,6 +40,7 @@ impl Company {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct RoleTitle {
     title: String,
 }
@@ -54,6 +57,7 @@ impl RoleTitle {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Description {
     description: String,
 }
@@ -70,6 +74,7 @@ impl Description {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AppliedOn {
     applied_on: NaiveDate,
 }
@@ -87,6 +92,7 @@ impl AppliedOn {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct URL {
     url: String,
 }
@@ -103,6 +109,7 @@ impl URL {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InitialComment {
     initial_comment: String,
 }
@@ -119,14 +126,15 @@ impl InitialComment {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Position {
-    id: PositionUuid,
-    company: Company,
-    role_title: RoleTitle,
-    description: Description,
-    applied_on: AppliedOn,
-    url: URL,
-    initial_comment: InitialComment,
+    pub id: PositionUuid,
+    pub company: Company,
+    pub role_title: RoleTitle,
+    pub description: Description,
+    pub applied_on: AppliedOn,
+    pub url: URL,
+    pub initial_comment: InitialComment,
 }
 
 impl Position {
@@ -165,7 +173,7 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::fixtures::TESTING_UUID;
+    use crate::utils::fixtures::{TESTING_UUID, create_fixture_position};
     use uuid::uuid;
 
     use super::*;
@@ -188,22 +196,8 @@ mod tests {
 
     #[test]
     fn test_create_new_position() {
-        let company = Company::new("hola");
-        let role_title = RoleTitle::new("im the role title");
-        let description = Description::new("Im the description of the position");
-        let applied_on = AppliedOn::new("Tue, 1 Jul 2003 10:52:37 +0200").unwrap();
-        let url = URL::new("https://me-the.url");
-        let initial_comment = InitialComment::new("... and I the initial comment");
 
-        let position = Position::new_with_uuid(
-            TESTING_UUID,
-            company,
-            role_title,
-            description,
-            applied_on,
-            url,
-            initial_comment,
-        ).unwrap();
+        let position = create_fixture_position();
 
         assert_eq!(position.id.value(), uuid!(TESTING_UUID));
         assert_eq!(position.company.value(), "hola");
