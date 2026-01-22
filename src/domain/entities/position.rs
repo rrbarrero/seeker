@@ -180,9 +180,17 @@ mod tests {
     #[test]
     fn test_wrong_uuid(){
         let id = "123";
-        let result: Result<PositionUuid, PositionValueError> = PositionUuid::from_str(id);
+        let result= PositionUuid::from_str(id);
 
         assert!(matches!(result, Err(PositionValueError::InvalidUuid(_))));
+    }
+
+    #[test]
+    fn test_wrong_date(){
+        let date = "30-2-2027";
+        let result = AppliedOn::new(date);
+
+        assert!(matches!(result, Err(PositionValueError::InvalidDate(_))));
     }
 
     #[test]
