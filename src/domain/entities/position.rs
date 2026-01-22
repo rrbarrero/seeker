@@ -137,16 +137,9 @@ impl Position {
         applied_on: AppliedOn,
         url: URL,
         initial_comment: InitialComment,
-    ) -> Self {
-        Position {
-            id: PositionUuid::new(),
-            company,
-            role_title,
-            description,
-            applied_on,
-            url,
-            initial_comment,
-        }
+    ) -> Result<Self, PositionValueError> {
+        let uuid = PositionUuid::new().value().to_string();
+        Self::new_with_uuid(&uuid, company, role_title, description, applied_on, url, initial_comment)
     }
 
     pub fn new_with_uuid(
