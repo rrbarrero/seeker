@@ -1,6 +1,8 @@
 use chrono::{DateTime, NaiveDate};
 use uuid::Uuid;
 
+use crate::domain::entities::errors::PositionValueError;
+
 struct PositionUuid {
     id: Uuid,
 }
@@ -14,13 +16,9 @@ impl PositionUuid {
         PositionUuid { id: Uuid::new_v4() }
     }
 
-    pub fn from_string(uuid: &str) -> Self {
-        match Uuid::parse_str(uuid) {
-            Ok(uuid) => PositionUuid { id: uuid },
-            Err(_) => {
-                panic!("Error parsing uuid v4!");
-            }
-        }
+    pub fn from_str(uuid: &str) -> Result<Self, PositionValueError> {
+        let id = Uuid::parse_str(uuid)?;
+        Ok(PositionUuid { id })
     }
 }
 
@@ -81,15 +79,11 @@ impl AppliedOn {
         self.applied_on.to_string()
     }
 
-    pub fn new(applied_on: &str) -> Self {
-        match DateTime::parse_from_rfc2822(applied_on) {
-            Ok(date) => AppliedOn {
-                applied_on: date.date_naive(),
-            },
-            Err(_) => {
-                panic!("Bad date format!")
-            }
-        }
+    pub fn new(applied_on: &str) -> Result<Self, PositionValueError> {
+        let parsed_date = DateTime::parse_from_rfc2822(applied_on)?;
+        Ok(AppliedOn {
+            applied_on: parsed_date.date_naive(),
+        })
     }
 }
 
@@ -163,16 +157,16 @@ impl Position {
         applied_on: AppliedOn,
         url: URL,
         initial_comment: InitialComment,
-    ) -> Self {
-        Position {
-            id: PositionUuid::from_string(uuid),
+    ) -> Result<Self, PositionValueError> {
+        Ok(Position {
+            id: PositionUuid::from_str(uuid)?,
             company,
             role_title,
             description,
             applied_on,
             url,
             initial_comment,
-        }
+        })
     }
 }
 
@@ -184,11 +178,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_wrong_uuid(){
+        let id = "123";
+        let result: Result<PositionUuid, PositionValueError> = PositionUuid::from_str(id);
+
+        assert!(matches!(result, Err(PositionValueError::InvalidUuid(_))));
+    }
+
+    #[test]
     fn test_create_new_position() {
         let company = Company::new("hola");
         let role_title = RoleTitle::new("im the role title");
         let description = Description::new("Im the description of the position");
-        let applied_on = AppliedOn::new("Tue, 1 Jul 2003 10:52:37 +0200");
+        let applied_on = AppliedOn::new("Tue, 1 Jul 2003 10:52:37 +0200").unwrap();
         let url = URL::new("https://me-the.url");
         let initial_comment = InitialComment::new("... and I the initial comment");
 
@@ -200,7 +202,7 @@ mod tests {
             applied_on,
             url,
             initial_comment,
-        );
+        ).unwrap();
 
         assert_eq!(position.id.value(), uuid!(TESTING_UUID));
         assert_eq!(position.company.value(), "hola");
