@@ -170,9 +170,9 @@ impl Position {
         initial_comment: InitialComment,
         status: PositionStatus,
     ) -> Result<Self, PositionValueError> {
-        let uuid = PositionUuid::new().value().to_string();
-        Self::new_with_uuid(
-            &uuid,
+        let id = PositionUuid::new();
+        Self::new_with_id(
+            id,
             company,
             role_title,
             description,
@@ -183,8 +183,8 @@ impl Position {
         )
     }
 
-    pub fn new_with_uuid(
-        uuid: &str,
+    pub fn new_with_id(
+        id: PositionUuid,
         company: Company,
         role_title: RoleTitle,
         description: Description,
@@ -194,7 +194,7 @@ impl Position {
         status: PositionStatus,
     ) -> Result<Self, PositionValueError> {
         Ok(Position {
-            id: PositionUuid::from_str(uuid)?,
+            id,
             company,
             role_title,
             description,
