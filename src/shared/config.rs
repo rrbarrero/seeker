@@ -50,7 +50,7 @@ mod tests {
         assert_eq!(config.environment, Environment::Test);
         assert_eq!(
             config.postgres_url,
-            "postgres://postgres:postgres@db:5432/postgres"
+            "postgres://postgres:postgres@db:5432/testdb"
         );
     }
 }
