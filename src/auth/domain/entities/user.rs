@@ -69,14 +69,11 @@ impl UserPassword {
     }
 
     pub fn new(password: &str) -> Result<Self, UserValueError> {
-        let estimate = zxcvbn(password, &[]);
-        if estimate.score() >= Score::Three {
-            Ok(UserPassword {
+        (zxcvbn(password, &[]).score() >= Score::Three)
+            .then(|| Self {
                 password: password.to_string(),
             })
-        } else {
-            Err(UserValueError::InvalidPassword(password.to_string()))
-        }
+            .ok_or_else(|| UserValueError::InvalidPassword(password.to_string()))
     }
 }
 
