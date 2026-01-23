@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev
 COPY . .
 
 # Build the application
+ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 # Runtime stage

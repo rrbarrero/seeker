@@ -30,11 +30,25 @@ impl Default for Config {
             },
             Err(_) => panic!("Environment not set"),
         };
-        let postgres_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
         Config {
-            postgres_url,
+            postgres_url: Self::build_database_url(),
             environment,
         }
+    }
+}
+
+impl Config {
+    fn build_database_url() -> String {
+        env::var("DATABASE_URL").unwrap_or_else(|_| {
+            let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
+            let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
+            let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
+            let port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
+            let db = env::var("POSTGRES_DB").unwrap_or_else(|_| "develdb".to_string());
+
+            format!("postgres://{user}:{password}@{host}:{port}/{db}")
+        })
     }
 }
 
@@ -48,9 +62,15 @@ mod tests {
         let config = Config::default();
 
         assert_eq!(config.environment, Environment::Test);
-        assert_eq!(
-            config.postgres_url,
-            "postgres://postgres:postgres@db:5432/testdb"
+        let expected_url = format!(
+            "postgres://{}:{}@{}:{}/{}",
+            std::env::var("POSTGRES_USER").unwrap_or("postgres".to_string()),
+            std::env::var("POSTGRES_PASSWORD").unwrap_or("postgres".to_string()),
+            std::env::var("POSTGRES_HOST").unwrap_or("localhost".to_string()),
+            std::env::var("POSTGRES_PORT").unwrap_or("5432".to_string()),
+            std::env::var("POSTGRES_DB").unwrap_or("testdb".to_string())
         );
+
+        assert_eq!(config.postgres_url, expected_url);
     }
 }

@@ -1,3 +1,4 @@
 /target
 .ignored-folder
 .env
+.env.test

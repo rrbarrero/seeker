@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
+use chrono::{Local, NaiveDate};
 use rand::rngs::OsRng;
 use zxcvbn::{Score, zxcvbn};
 
@@ -96,17 +97,28 @@ pub struct User {
     pub id: UserUuid,
     pub email: UserEmail,
     password: UserPassword,
+    pub created: NaiveDate,
+    pub updated: NaiveDate,
 }
 
 impl User {
+    pub fn password(&self) -> &UserPassword {
+        &self.password
+    }
+
     pub fn new(id: &str, email: &str, password: &str) -> Result<Self, UserValueError> {
         let id = UserUuid::from_str(id)?;
         let email = UserEmail::new(email)?;
         let password = UserPassword::new(password)?;
+        let now = Local::now().naive_local().date();
+        let created = now;
+        let updated = now;
         Ok(User {
             id,
             email,
             password,
+            created,
+            updated,
         })
     }
 
