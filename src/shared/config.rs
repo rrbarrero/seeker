@@ -7,16 +7,33 @@ pub enum ConfigError {
     InvalidConfiguration(#[from] std::env::VarError),
 }
 
+#[derive(PartialEq, Debug)]
+pub enum Environment {
+    Development,
+    Production,
+    Test,
+}
+
 pub struct Config {
     pub postgres_url: String,
+    pub environment: Environment,
 }
 
 impl Default for Config {
     fn default() -> Config {
-        if let Ok(postgres_url) = env::var("DATABASE_URL") {
-            Config { postgres_url }
-        } else {
-            panic!("\nDatabase not configured! Set DATABASE_URL on .env properly.\n")
+        let environment = match env::var("ENVIRONMENT") {
+            Ok(env) => match env.as_str() {
+                "development" => Environment::Development,
+                "production" => Environment::Production,
+                "test" => Environment::Test,
+                _ => panic!("Invalid environment"),
+            },
+            Err(_) => panic!("Environment not set"),
+        };
+        let postgres_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        Config {
+            postgres_url,
+            environment,
         }
     }
 }
@@ -30,6 +47,10 @@ mod tests {
     fn test_config_load() {
         let config = Config::default();
 
-        assert_ne!(config.postgres_url, "");
+        assert_eq!(config.environment, Environment::Development);
+        assert_eq!(
+            config.postgres_url,
+            "postgres://postgres:postgres@db:5432/postgres"
+        );
     }
 }
