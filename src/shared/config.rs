@@ -47,7 +47,7 @@ mod tests {
     fn test_config_load() {
         let config = Config::default();
 
-        assert_eq!(config.environment, Environment::Development);
+        assert_eq!(config.environment, Environment::Test);
         assert_eq!(
             config.postgres_url,
             "postgres://postgres:postgres@db:5432/postgres"
