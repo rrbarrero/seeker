@@ -7,7 +7,7 @@ use zxcvbn::{Score, zxcvbn};
 use email_address::EmailAddress;
 use uuid::Uuid;
 
-use crate::auth::domain::entities::error::UserValueError;
+use crate::auth::domain::entities::user_error::UserValueError;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct UserUuid {
@@ -123,7 +123,7 @@ impl User {
 #[cfg(test)]
 mod tests {
     use crate::{
-        auth::domain::entities::error::UserValueError,
+        auth::domain::entities::user_error::UserValueError,
         shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID},
     };
 

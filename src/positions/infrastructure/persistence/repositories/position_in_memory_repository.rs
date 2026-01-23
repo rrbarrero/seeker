@@ -4,10 +4,10 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::positions::domain::entities::{
-    error::PositionRepositoryError,
-    interfaces::IPositionRepository,
     position::{Position, PositionUuid},
+    position_error::PositionRepositoryError,
 };
+use crate::positions::domain::repositories::position_repository::IPositionRepository;
 
 #[derive(Clone)]
 pub struct PositionInMemoryRepository {

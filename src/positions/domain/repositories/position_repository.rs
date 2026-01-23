@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::positions::domain::entities::{
-    error::PositionRepositoryError,
     position::{Position, PositionUuid},
+    position_error::PositionRepositoryError,
 };
 
 #[async_trait]
