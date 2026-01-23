@@ -105,17 +105,17 @@ impl AppliedOn {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct URL {
+pub struct Url {
     url: String,
 }
 
-impl URL {
+impl Url {
     pub fn value(&self) -> &str {
         &self.url
     }
 
     pub fn new(url: &str) -> Self {
-        URL {
+        Url {
             url: url.to_string(),
         }
     }
@@ -145,7 +145,7 @@ pub struct Position {
     pub role_title: RoleTitle,
     pub description: Description,
     pub applied_on: AppliedOn,
-    pub url: URL,
+    pub url: Url,
     pub initial_comment: InitialComment,
 }
 
@@ -155,7 +155,7 @@ impl Position {
         role_title: RoleTitle,
         description: Description,
         applied_on: AppliedOn,
-        url: URL,
+        url: Url,
         initial_comment: InitialComment,
     ) -> Result<Self, PositionValueError> {
         let uuid = PositionUuid::new().value().to_string();
@@ -176,7 +176,7 @@ impl Position {
         role_title: RoleTitle,
         description: Description,
         applied_on: AppliedOn,
-        url: URL,
+        url: Url,
         initial_comment: InitialComment,
     ) -> Result<Self, PositionValueError> {
         Ok(Position {
