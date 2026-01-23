@@ -24,8 +24,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}
       ENVIRONMENT: test
+      SQLX_OFFLINE: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
