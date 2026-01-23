@@ -10,6 +10,4 @@ pub enum PositionValueError {
 }
 
 #[derive(Error, Debug)]
-pub enum PositionRepositoryError {
-
-}
+pub enum PositionRepositoryError {}

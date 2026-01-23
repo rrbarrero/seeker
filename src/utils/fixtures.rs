@@ -1,4 +1,6 @@
-use crate::domain::entities::position::{AppliedOn, Company, Description, InitialComment, Position, RoleTitle, URL};
+use crate::domain::entities::position::{
+    AppliedOn, Company, Description, InitialComment, Position, RoleTitle, URL,
+};
 
 pub static TESTING_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
 
@@ -10,5 +12,14 @@ pub fn create_fixture_position() -> Position {
     let url = URL::new("https://me-the.url");
     let initial_comment = InitialComment::new("... and I the initial comment");
 
-    Position::new_with_uuid(TESTING_UUID, company, role_title, description, applied_on, url, initial_comment).unwrap()
+    Position::new_with_uuid(
+        TESTING_UUID,
+        company,
+        role_title,
+        description,
+        applied_on,
+        url,
+        initial_comment,
+    )
+    .unwrap()
 }

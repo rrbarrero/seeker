@@ -147,7 +147,15 @@ impl Position {
         initial_comment: InitialComment,
     ) -> Result<Self, PositionValueError> {
         let uuid = PositionUuid::new().value().to_string();
-        Self::new_with_uuid(&uuid, company, role_title, description, applied_on, url, initial_comment)
+        Self::new_with_uuid(
+            &uuid,
+            company,
+            role_title,
+            description,
+            applied_on,
+            url,
+            initial_comment,
+        )
     }
 
     pub fn new_with_uuid(
@@ -179,15 +187,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_wrong_uuid(){
+    fn test_wrong_uuid() {
         let id = "123";
-        let result= PositionUuid::from_str(id);
+        let result = PositionUuid::from_str(id);
 
         assert!(matches!(result, Err(PositionValueError::InvalidUuid(_))));
     }
 
     #[test]
-    fn test_wrong_date(){
+    fn test_wrong_date() {
         let date = "30-2-2027";
         let result = AppliedOn::new(date);
 
@@ -196,7 +204,6 @@ mod tests {
 
     #[test]
     fn test_create_new_position() {
-
         let position = create_fixture_position();
 
         assert_eq!(position.id.value(), uuid!(TESTING_UUID));
