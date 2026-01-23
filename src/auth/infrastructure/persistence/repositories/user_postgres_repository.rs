@@ -48,7 +48,7 @@ mod tests {
         let pool = sqlx::postgres::PgPool::connect(&config.postgres_url)
             .await
             .unwrap();
-        sqlx::query!("TRUNCATE TABLE users")
+        let _ = sqlx::query!("TRUNCATE TABLE users")
             .execute(&pool)
             .await
             .unwrap();
