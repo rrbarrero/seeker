@@ -1,5 +1,5 @@
 use crate::positions::domain::entities::{
-    errors::PositionRepositoryError,
+    error::PositionRepositoryError,
     position::{Position, PositionUuid},
 };
 

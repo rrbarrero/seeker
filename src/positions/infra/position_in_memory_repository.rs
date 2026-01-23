@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::positions::domain::entities::{
-    errors::PositionRepositoryError,
+    error::PositionRepositoryError,
     interfaces::IPositionRepository,
     position::{Position, PositionUuid},
 };

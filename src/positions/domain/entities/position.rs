@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::{DateTime, NaiveDate};
 use uuid::Uuid;
 
-use crate::positions::domain::entities::errors::PositionValueError;
+use crate::positions::domain::entities::error::PositionValueError;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct PositionUuid {
@@ -187,9 +187,9 @@ impl PositionBuilder {
             },
         }
     }
-    pub fn with_uuid(&mut self, uuid: &str) -> &mut Self {
-        self.position.id = PositionUuid::from_str(uuid).unwrap();
-        self
+    pub fn with_uuid(&mut self, uuid: &str) -> Result<&mut Self, PositionValueError> {
+        self.position.id = PositionUuid::from_str(uuid)?;
+        Ok(self)
     }
     pub fn with_role_title(&mut self, title: &str) -> &mut Self {
         self.position.role_title = RoleTitle::new(title);
@@ -203,9 +203,9 @@ impl PositionBuilder {
         self.position.description = Description::new(description);
         self
     }
-    pub fn with_applied_on(&mut self, applied_on: &str) -> &mut Self {
-        self.position.applied_on = AppliedOn::new(applied_on).unwrap();
-        self
+    pub fn with_applied_on(&mut self, applied_on: &str) -> Result<&mut Self, PositionValueError> {
+        self.position.applied_on = AppliedOn::new(applied_on)?;
+        Ok(self)
     }
     pub fn with_url(&mut self, url: &str) -> &mut Self {
         self.position.url = Url::new(url);
