@@ -1,6 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use async_trait::async_trait;
+use tokio::sync::RwLock;
 
 use crate::positions::domain::entities::{
     error::PositionRepositoryError,
@@ -26,23 +27,23 @@ impl IPositionRepository for PositionInMemoryRepository {
     async fn get(&self, position_id: PositionUuid) -> Option<Position> {
         self.positions
             .read()
-            .unwrap()
+            .await
             .iter()
             .find(|&p| p.id == position_id)
             .cloned()
     }
     async fn get_all(&self) -> Vec<Position> {
-        self.positions.read().unwrap().clone()
+        self.positions.read().await.clone()
     }
     async fn remove(&mut self, position_uuid: PositionUuid) {
         self.positions
             .write()
-            .unwrap()
+            .await
             .retain(|p| p.id != position_uuid);
     }
     async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
         let uuid = position.id.clone();
-        self.positions.write().unwrap().push(position);
+        self.positions.write().await.push(position);
         Ok(uuid)
     }
 }
