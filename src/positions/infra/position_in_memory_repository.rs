@@ -46,7 +46,10 @@ impl IPositionRepository for PositionInMemoryRepository {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::fixtures::{TESTING_UUID, create_fixture_position};
+    use crate::{
+        positions::domain::entities::position::PositionBuilder,
+        shared::fixtures::{TESTING_UUID, create_fixture_position},
+    };
     use std::str::FromStr;
 
     use super::*;
@@ -85,5 +88,32 @@ mod tests {
         );
 
         assert_eq!(repo.get_all().len(), 1);
+    }
+
+    #[test]
+    fn test_save_with_concurrency() {
+        use std::thread;
+
+        let repo = PositionInMemoryRepository::default();
+        let num_threads = 10;
+        let mut handles = vec![];
+
+        for i in 0..num_threads {
+            let mut repo_clone = repo.clone();
+
+            let handle = thread::spawn(move || {
+                let pos = PositionBuilder::new()
+                    .with_role_title(&format!("Role {}", i))
+                    .build();
+                repo_clone.save(pos).unwrap();
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        assert_eq!(repo.get_all().len(), num_threads);
     }
 }
