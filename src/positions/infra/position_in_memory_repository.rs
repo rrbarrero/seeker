@@ -116,4 +116,48 @@ mod tests {
 
         assert_eq!(repo.get_all().len(), num_threads);
     }
+
+    #[test]
+    fn test_remove_position() {
+        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+
+        let position_id = PositionUuid::from_str(TESTING_UUID).unwrap();
+        repo.remove(position_id);
+
+        assert_eq!(repo.get_all().len(), 0);
+    }
+
+    #[test]
+    fn test_remove_position_not_found() {
+        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+
+        let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
+        repo.remove(position_id);
+
+        assert_eq!(repo.get_all().len(), 1);
+    }
+
+    #[test]
+    fn test_get_all_positions() {
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+
+        assert_eq!(repo.get_all().len(), 1);
+    }
+
+    #[test]
+    fn test_get_all_positions_empty() {
+        let repo = create_positions_repo_for_testing(None);
+
+        assert_eq!(repo.get_all().len(), 0);
+    }
+
+    #[test]
+    fn test_get_position_not_found() {
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+
+        let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
+        let position = repo.get(position_id);
+
+        assert_eq!(position, None);
+    }
 }
