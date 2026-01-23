@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, NaiveDate};
 use uuid::Uuid;
 
@@ -8,6 +10,12 @@ pub struct PositionUuid {
     id: Uuid,
 }
 
+impl Default for PositionUuid {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PositionUuid {
     pub fn value(&self) -> Uuid {
         self.id
@@ -16,9 +24,13 @@ impl PositionUuid {
     pub fn new() -> Self {
         PositionUuid { id: Uuid::new_v4() }
     }
+}
 
-    pub fn from_str(uuid: &str) -> Result<Self, PositionValueError> {
-        let id = Uuid::parse_str(uuid)?;
+impl FromStr for PositionUuid {
+    type Err = PositionValueError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id = Uuid::parse_str(s)?;
         Ok(PositionUuid { id })
     }
 }

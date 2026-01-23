@@ -28,14 +28,17 @@ impl IPositionRepository for PositionInMemoryRepository {
 #[cfg(test)]
 mod tests {
     use crate::utils::fixtures::{TESTING_UUID, create_fixture_position};
+    use std::str::FromStr;
 
     use super::*;
+
     fn create_testing_repo() -> PositionInMemoryRepository {
         PositionInMemoryRepository {
             positions: vec![create_fixture_position()],
         }
     }
 
+    #[test]
     fn test_get_position() {
         let repo = create_testing_repo();
 
