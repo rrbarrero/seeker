@@ -1,5 +1,4 @@
-pub mod domain;
-pub mod infra;
+pub mod positions;
 pub mod utils;
 
 fn main() {

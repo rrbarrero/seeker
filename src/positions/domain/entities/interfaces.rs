@@ -1,4 +1,4 @@
-use crate::domain::entities::{
+use crate::positions::domain::entities::{
     errors::PositionRepositoryError,
     position::{Position, PositionUuid},
 };

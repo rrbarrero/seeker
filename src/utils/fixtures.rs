@@ -1,4 +1,4 @@
-use crate::domain::entities::position::{
+use crate::positions::domain::entities::position::{
     AppliedOn, Company, Description, InitialComment, Position, RoleTitle, URL,
 };
 

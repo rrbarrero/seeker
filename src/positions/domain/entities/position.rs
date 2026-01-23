@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::{DateTime, NaiveDate};
 use uuid::Uuid;
 
-use crate::domain::entities::errors::PositionValueError;
+use crate::positions::domain::entities::errors::PositionValueError;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct PositionUuid {
