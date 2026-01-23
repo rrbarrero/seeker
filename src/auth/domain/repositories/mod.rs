@@ -1,1 +1,1 @@
-// Domain repositories for auth
+pub mod user_repository;
