@@ -160,49 +160,73 @@ pub struct Position {
     pub status: PositionStatus,
 }
 
-impl Position {
-    pub fn new(
-        company: Company,
-        role_title: RoleTitle,
-        description: Description,
-        applied_on: AppliedOn,
-        url: Url,
-        initial_comment: InitialComment,
-        status: PositionStatus,
-    ) -> Result<Self, PositionValueError> {
-        let id = PositionUuid::new();
-        Self::new_with_id(
-            id,
-            company,
-            role_title,
-            description,
-            applied_on,
-            url,
-            initial_comment,
-            status,
-        )
-    }
+pub struct PositionBuilder {
+    position: Position,
+}
 
-    pub fn new_with_id(
-        id: PositionUuid,
-        company: Company,
-        role_title: RoleTitle,
-        description: Description,
-        applied_on: AppliedOn,
-        url: Url,
-        initial_comment: InitialComment,
-        status: PositionStatus,
-    ) -> Result<Self, PositionValueError> {
-        Ok(Position {
-            id,
-            company,
-            role_title,
-            description,
-            applied_on,
-            url,
-            initial_comment,
-            status,
-        })
+impl PositionBuilder {
+    pub fn new() -> Self {
+        let id = PositionUuid::new();
+        let company = Company::new("");
+        let role_title = RoleTitle::new("");
+        let description = Description::new("");
+        let applied_on = AppliedOn::new("Tue, 1 Jul 2003 10:52:37 +0200").unwrap();
+        let url = Url::new("");
+        let initial_comment = InitialComment::new("");
+        let status = PositionStatus::CvSent;
+        PositionBuilder {
+            position: Position {
+                id,
+                company,
+                role_title,
+                description,
+                applied_on,
+                url,
+                initial_comment,
+                status,
+            },
+        }
+    }
+    pub fn with_uuid(&mut self, uuid: &str) -> &mut Self {
+        self.position.id = PositionUuid::from_str(uuid).unwrap();
+        self
+    }
+    pub fn with_role_title(&mut self, title: &str) -> &mut Self {
+        self.position.role_title = RoleTitle::new(title);
+        self
+    }
+    pub fn with_company(&mut self, company: &str) -> &mut Self {
+        self.position.company = Company::new(company);
+        self
+    }
+    pub fn with_description(&mut self, description: &str) -> &mut Self {
+        self.position.description = Description::new(description);
+        self
+    }
+    pub fn with_applied_on(&mut self, applied_on: &str) -> &mut Self {
+        self.position.applied_on = AppliedOn::new(applied_on).unwrap();
+        self
+    }
+    pub fn with_url(&mut self, url: &str) -> &mut Self {
+        self.position.url = Url::new(url);
+        self
+    }
+    pub fn with_initial_comment(&mut self, initial_comment: &str) -> &mut Self {
+        self.position.initial_comment = InitialComment::new(initial_comment);
+        self
+    }
+    pub fn with_status(&mut self, status: PositionStatus) -> &mut Self {
+        self.position.status = status;
+        self
+    }
+    pub fn build(&self) -> Position {
+        self.position.clone()
+    }
+}
+
+impl Default for PositionBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
