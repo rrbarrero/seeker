@@ -35,7 +35,7 @@ impl FromStr for PositionUuid {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Company {
     name: String,
 }
@@ -52,7 +52,7 @@ impl Company {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct RoleTitle {
     title: String,
 }
@@ -69,7 +69,7 @@ impl RoleTitle {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Description {
     description: String,
 }
@@ -86,7 +86,7 @@ impl Description {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct AppliedOn {
     applied_on: NaiveDate,
 }
@@ -104,7 +104,7 @@ impl AppliedOn {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Url {
     url: String,
 }
@@ -121,7 +121,7 @@ impl Url {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InitialComment {
     initial_comment: String,
 }
@@ -138,7 +138,7 @@ impl InitialComment {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub id: PositionUuid,
     pub company: Company,
