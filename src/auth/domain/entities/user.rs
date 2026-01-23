@@ -95,6 +95,10 @@ impl User {
             password,
         })
     }
+
+    pub fn check_password(&self, password: &str) -> bool {
+        self.password.value() == password
+    }
 }
 
 #[cfg(test)]
@@ -135,5 +139,21 @@ mod tests {
         let result = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD);
 
         assert!(matches!(result, Ok(_)));
+    }
+
+    #[test]
+    fn test_check_password() {
+        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD).unwrap();
+        let result = user.check_password(TESTING_PASSWORD);
+
+        assert!(result);
+    }
+
+    #[test]
+    fn test_check_password_wrong() {
+        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD).unwrap();
+        let result = user.check_password("123");
+
+        assert!(!result);
     }
 }
