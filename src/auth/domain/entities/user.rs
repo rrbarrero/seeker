@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-extern crate zxcvbn;
-
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
+use rand::rngs::OsRng;
 use zxcvbn::{Score, zxcvbn};
 
 use email_address::EmailAddress;
@@ -70,10 +70,24 @@ impl UserPassword {
 
     pub fn new(password: &str) -> Result<Self, UserValueError> {
         (zxcvbn(password, &[]).score() >= Score::Three)
-            .then(|| Self {
-                password: password.to_string(),
+            .then(|| {
+                let hashed = Self::hash_password(password)?;
+                Ok(Self { password: hashed })
             })
-            .ok_or_else(|| UserValueError::InvalidPassword(password.to_string()))
+            .ok_or_else(|| UserValueError::InvalidPassword(password.to_string()))?
+    }
+
+    pub fn hash_password(password: &str) -> Result<String, UserValueError> {
+        let salt = SaltString::generate(&mut OsRng);
+
+        let argon2 = Argon2::default();
+
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map_err(UserValueError::ErrorHashingPassword)?
+            .to_string();
+
+        Ok(password_hash)
     }
 }
 
@@ -96,8 +110,13 @@ impl User {
         })
     }
 
-    pub fn check_password(&self, password: &str) -> bool {
-        self.password.value() == password
+    pub fn verify_password(&self, password: &str) -> Result<bool, UserValueError> {
+        Ok(Argon2::default()
+            .verify_password(
+                password.as_bytes(),
+                &PasswordHash::try_from(self.password.value())?,
+            )
+            .is_ok())
     }
 }
 
@@ -138,22 +157,37 @@ mod tests {
     fn test_user() {
         let result = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD);
 
-        assert!(matches!(result, Ok(_)));
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn test_check_password() {
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD).unwrap();
-        let result = user.check_password(TESTING_PASSWORD);
+    fn test_check_password() -> Result<(), UserValueError> {
+        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let result = user.verify_password(TESTING_PASSWORD);
 
-        assert!(result);
+        assert!(matches!(result, Ok(true)));
+        Ok(())
     }
 
     #[test]
-    fn test_check_password_wrong() {
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD).unwrap();
-        let result = user.check_password("123");
+    fn test_check_password_wrong() -> Result<(), UserValueError> {
+        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let result = user.verify_password("123");
 
-        assert!(!result);
+        assert!(matches!(result, Ok(false)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_not_ascii_password() -> Result<(), UserValueError> {
+        let user = User::new(
+            TESTING_UUID,
+            TESTING_EMAIL,
+            "ñÑ☢️fhadsfhKJHlkfhjvnluYu,....",
+        )?;
+        let result = user.verify_password("ñÑ☢️fhadsfhKJHlkfhjvnluYu,....");
+
+        assert!(matches!(result, Ok(true)));
+        Ok(())
     }
 }

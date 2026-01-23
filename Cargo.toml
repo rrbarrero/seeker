@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+argon2 = { version = "0.5.3", features = ["std"] }
 chrono = "0.4.43"
 email_address = "0.2.9"
+rand = "0.8.5"
 thiserror = "2.0.18"
 uuid = { version = "1.19.0", features = ["v4"] }
 zxcvbn = "3.1.0"
