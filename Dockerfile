@@ -23,5 +23,5 @@ RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/
 # Copy the binary from the builder stage
 COPY --from=builder /usr/src/app/target/release/best-seeker .
 
-# Set the entrypoint
-ENTRYPOINT ["./best-seeker"]
+# Set the default command
+CMD ["./best-seeker"]
