@@ -104,6 +104,15 @@ impl AppliedOn {
     }
 }
 
+impl Default for AppliedOn {
+    fn default() -> Self {
+        let parsed_date = DateTime::parse_from_rfc2822("Fri, 23 Jan 2026 10:10:10 +0200").unwrap();
+        Self {
+            applied_on: parsed_date.date_naive(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Url {
     url: String,
@@ -161,72 +170,87 @@ pub struct Position {
 }
 
 pub struct PositionBuilder {
-    position: Position,
+    id: PositionUuid,
+    company: Company,
+    role_title: RoleTitle,
+    description: Description,
+    applied_on: AppliedOn,
+    url: Url,
+    initial_comment: InitialComment,
+    status: PositionStatus,
 }
 
 impl PositionBuilder {
     pub fn new() -> Self {
-        let id = PositionUuid::new();
-        let company = Company::new("");
-        let role_title = RoleTitle::new("");
-        let description = Description::new("");
-        let applied_on = AppliedOn::new("Tue, 1 Jul 2003 10:52:37 +0200").unwrap();
-        let url = Url::new("");
-        let initial_comment = InitialComment::new("");
-        let status = PositionStatus::CvSent;
-        PositionBuilder {
-            position: Position {
-                id,
-                company,
-                role_title,
-                description,
-                applied_on,
-                url,
-                initial_comment,
-                status,
-            },
+        Self::default()
+    }
+
+    pub fn with_uuid(mut self, uuid: &str) -> Result<Self, PositionValueError> {
+        self.id = PositionUuid::from_str(uuid)?;
+        Ok(self)
+    }
+
+    pub fn with_role_title(mut self, title: &str) -> Self {
+        self.role_title = RoleTitle::new(title);
+        self
+    }
+
+    pub fn with_company(mut self, company: &str) -> Self {
+        self.company = Company::new(company);
+        self
+    }
+
+    pub fn with_description(mut self, description: &str) -> Self {
+        self.description = Description::new(description);
+        self
+    }
+
+    pub fn with_applied_on(mut self, applied_on: &str) -> Result<Self, PositionValueError> {
+        self.applied_on = AppliedOn::new(applied_on)?;
+        Ok(self)
+    }
+
+    pub fn with_url(mut self, url: &str) -> Self {
+        self.url = Url::new(url);
+        self
+    }
+
+    pub fn with_initial_comment(mut self, initial_comment: &str) -> Self {
+        self.initial_comment = InitialComment::new(initial_comment);
+        self
+    }
+
+    pub fn with_status(mut self, status: PositionStatus) -> Self {
+        self.status = status;
+        self
+    }
+
+    pub fn build(self) -> Position {
+        Position {
+            id: self.id,
+            company: self.company,
+            role_title: self.role_title,
+            description: self.description,
+            applied_on: self.applied_on,
+            url: self.url,
+            initial_comment: self.initial_comment,
+            status: self.status,
         }
-    }
-    pub fn with_uuid(&mut self, uuid: &str) -> Result<&mut Self, PositionValueError> {
-        self.position.id = PositionUuid::from_str(uuid)?;
-        Ok(self)
-    }
-    pub fn with_role_title(&mut self, title: &str) -> &mut Self {
-        self.position.role_title = RoleTitle::new(title);
-        self
-    }
-    pub fn with_company(&mut self, company: &str) -> &mut Self {
-        self.position.company = Company::new(company);
-        self
-    }
-    pub fn with_description(&mut self, description: &str) -> &mut Self {
-        self.position.description = Description::new(description);
-        self
-    }
-    pub fn with_applied_on(&mut self, applied_on: &str) -> Result<&mut Self, PositionValueError> {
-        self.position.applied_on = AppliedOn::new(applied_on)?;
-        Ok(self)
-    }
-    pub fn with_url(&mut self, url: &str) -> &mut Self {
-        self.position.url = Url::new(url);
-        self
-    }
-    pub fn with_initial_comment(&mut self, initial_comment: &str) -> &mut Self {
-        self.position.initial_comment = InitialComment::new(initial_comment);
-        self
-    }
-    pub fn with_status(&mut self, status: PositionStatus) -> &mut Self {
-        self.position.status = status;
-        self
-    }
-    pub fn build(&self) -> Position {
-        self.position.clone()
     }
 }
 
 impl Default for PositionBuilder {
     fn default() -> Self {
-        Self::new()
+        Self {
+            id: PositionUuid::new(),
+            company: Company::new(""),
+            role_title: RoleTitle::new(""),
+            description: Description::new(""),
+            applied_on: AppliedOn::default(),
+            url: Url::new(""),
+            initial_comment: InitialComment::new(""),
+            status: PositionStatus::CvSent,
+        }
     }
 }
 
@@ -247,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_wrong_date() {
-        let date = "30-2-2027";
+        let date = "23-1-2026";
         let result = AppliedOn::new(date);
 
         assert!(matches!(result, Err(PositionValueError::InvalidDate(_))));
@@ -264,7 +288,7 @@ mod tests {
             position.description.value(),
             "Im the description of the position"
         );
-        assert_eq!(position.applied_on.value(), "2003-07-01");
+        assert_eq!(position.applied_on.value(), "2026-01-23");
         assert_eq!(position.url.value(), "https://me-the.url");
         assert_eq!(
             position.initial_comment.value(),
