@@ -139,6 +139,16 @@ impl InitialComment {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum PositionStatus {
+    CvSent,
+    PhoneScreenScheduled,
+    TechnicalInterview,
+    OfferReceived,
+    Rejected,
+    Withdrawn,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub id: PositionUuid,
     pub company: Company,
@@ -147,6 +157,7 @@ pub struct Position {
     pub applied_on: AppliedOn,
     pub url: Url,
     pub initial_comment: InitialComment,
+    pub status: PositionStatus,
 }
 
 impl Position {
@@ -157,6 +168,7 @@ impl Position {
         applied_on: AppliedOn,
         url: Url,
         initial_comment: InitialComment,
+        status: PositionStatus,
     ) -> Result<Self, PositionValueError> {
         let uuid = PositionUuid::new().value().to_string();
         Self::new_with_uuid(
@@ -167,6 +179,7 @@ impl Position {
             applied_on,
             url,
             initial_comment,
+            status,
         )
     }
 
@@ -178,6 +191,7 @@ impl Position {
         applied_on: AppliedOn,
         url: Url,
         initial_comment: InitialComment,
+        status: PositionStatus,
     ) -> Result<Self, PositionValueError> {
         Ok(Position {
             id: PositionUuid::from_str(uuid)?,
@@ -187,6 +201,7 @@ impl Position {
             applied_on,
             url,
             initial_comment,
+            status,
         })
     }
 }
@@ -231,5 +246,6 @@ mod tests {
             position.initial_comment.value(),
             "... and I the initial comment"
         );
+        assert_eq!(position.status, PositionStatus::PhoneScreenScheduled);
     }
 }

@@ -1,5 +1,5 @@
 use crate::positions::domain::entities::position::{
-    AppliedOn, Company, Description, InitialComment, Position, RoleTitle, Url,
+    AppliedOn, Company, Description, InitialComment, Position, PositionStatus, RoleTitle, Url,
 };
 
 pub static TESTING_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
@@ -20,6 +20,7 @@ pub fn create_fixture_position() -> Position {
         applied_on,
         url,
         initial_comment,
+        PositionStatus::PhoneScreenScheduled,
     )
     .unwrap()
 }
