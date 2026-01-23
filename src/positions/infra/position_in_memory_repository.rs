@@ -1,5 +1,7 @@
 use std::sync::{Arc, RwLock};
 
+use async_trait::async_trait;
+
 use crate::positions::domain::entities::{
     error::PositionRepositoryError,
     interfaces::IPositionRepository,
@@ -19,8 +21,9 @@ impl Default for PositionInMemoryRepository {
     }
 }
 
+#[async_trait]
 impl IPositionRepository for PositionInMemoryRepository {
-    fn get(&self, position_id: PositionUuid) -> Option<Position> {
+    async fn get(&self, position_id: PositionUuid) -> Option<Position> {
         self.positions
             .read()
             .unwrap()
@@ -28,16 +31,16 @@ impl IPositionRepository for PositionInMemoryRepository {
             .find(|&p| p.id == position_id)
             .cloned()
     }
-    fn get_all(&self) -> Vec<Position> {
+    async fn get_all(&self) -> Vec<Position> {
         self.positions.read().unwrap().clone()
     }
-    fn remove(&mut self, position_uuid: PositionUuid) {
+    async fn remove(&mut self, position_uuid: PositionUuid) {
         self.positions
             .write()
             .unwrap()
             .retain(|p| p.id != position_uuid);
     }
-    fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
+    async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
         let uuid = position.id.clone();
         self.positions.write().unwrap().push(position);
         Ok(uuid)
@@ -54,109 +57,109 @@ mod tests {
 
     use super::*;
 
-    fn create_positions_repo_for_testing(position: Option<Position>) -> PositionInMemoryRepository {
+    async fn create_positions_repo_for_testing(
+        position: Option<Position>,
+    ) -> PositionInMemoryRepository {
         let mut repo = PositionInMemoryRepository::default();
 
         if let Some(p) = position {
-            let _ = repo.save(p);
+            let _ = repo.save(p).await;
         }
 
         repo
     }
 
-    #[test]
-    fn test_get_position() {
-        let repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+    #[tokio::test]
+    async fn test_get_position() {
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::from_str(TESTING_UUID).unwrap();
-        let position = repo.get(position_id).unwrap();
+        let position = repo.get(position_id).await.unwrap();
 
         let expected_position = create_fixture_position();
 
         assert_eq!(position, expected_position);
     }
 
-    #[test]
-    fn test_save_position() {
-        let mut repo = create_positions_repo_for_testing(None);
+    #[tokio::test]
+    async fn test_save_position() {
+        let mut repo = create_positions_repo_for_testing(None).await;
 
-        let position_uuid = repo.save(create_fixture_position());
+        let position_uuid = repo.save(create_fixture_position()).await;
 
         assert_eq!(
             position_uuid.unwrap(),
             PositionUuid::from_str(TESTING_UUID).unwrap()
         );
 
-        assert_eq!(repo.get_all().len(), 1);
+        assert_eq!(repo.get_all().await.len(), 1);
     }
 
-    #[test]
-    fn test_save_with_concurrency() {
-        use std::thread;
-
+    #[tokio::test]
+    async fn test_save_with_concurrency() {
         let repo = PositionInMemoryRepository::default();
-        let num_threads = 10;
+        let num_tasks = 10;
         let mut handles = vec![];
 
-        for i in 0..num_threads {
+        for i in 0..num_tasks {
             let mut repo_clone = repo.clone();
 
-            let handle = thread::spawn(move || {
+            let handle = tokio::spawn(async move {
                 let pos = PositionBuilder::new()
                     .with_role_title(&format!("Role {}", i))
                     .build();
-                repo_clone.save(pos).unwrap();
+                repo_clone.save(pos).await.unwrap();
             });
             handles.push(handle);
         }
 
         for handle in handles {
-            handle.join().unwrap();
+            handle.await.unwrap();
         }
 
-        assert_eq!(repo.get_all().len(), num_threads);
+        assert_eq!(repo.get_all().await.len(), num_tasks);
     }
 
-    #[test]
-    fn test_remove_position() {
-        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+    #[tokio::test]
+    async fn test_remove_position() {
+        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::from_str(TESTING_UUID).unwrap();
-        repo.remove(position_id);
+        let _ = repo.remove(position_id).await;
 
-        assert_eq!(repo.get_all().len(), 0);
+        assert_eq!(repo.get_all().await.len(), 0);
     }
 
-    #[test]
-    fn test_remove_position_not_found() {
-        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+    #[tokio::test]
+    async fn test_remove_position_not_found() {
+        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
-        repo.remove(position_id);
+        let _ = repo.remove(position_id).await;
 
-        assert_eq!(repo.get_all().len(), 1);
+        assert_eq!(repo.get_all().await.len(), 1);
     }
 
-    #[test]
-    fn test_get_all_positions() {
-        let repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+    #[tokio::test]
+    async fn test_get_all_positions() {
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        assert_eq!(repo.get_all().len(), 1);
+        assert_eq!(repo.get_all().await.len(), 1);
     }
 
-    #[test]
-    fn test_get_all_positions_empty() {
-        let repo = create_positions_repo_for_testing(None);
+    #[tokio::test]
+    async fn test_get_all_positions_empty() {
+        let repo = create_positions_repo_for_testing(None).await;
 
-        assert_eq!(repo.get_all().len(), 0);
+        assert_eq!(repo.get_all().await.len(), 0);
     }
 
-    #[test]
-    fn test_get_position_not_found() {
-        let repo = create_positions_repo_for_testing(Some(create_fixture_position()));
+    #[tokio::test]
+    async fn test_get_position_not_found() {
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
-        let position = repo.get(position_id);
+        let position = repo.get(position_id).await;
 
         assert_eq!(position, None);
     }

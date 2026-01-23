@@ -1,11 +1,14 @@
+use async_trait::async_trait;
+
 use crate::positions::domain::entities::{
     error::PositionRepositoryError,
     position::{Position, PositionUuid},
 };
 
+#[async_trait]
 pub trait IPositionRepository {
-    fn get_all(&self) -> Vec<Position>;
-    fn get(&self, position_id: PositionUuid) -> Option<Position>;
-    fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError>;
-    fn remove(&mut self, position_uuid: PositionUuid);
+    async fn get_all(&self) -> Vec<Position>;
+    async fn get(&self, position_id: PositionUuid) -> Option<Position>;
+    async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError>;
+    async fn remove(&mut self, position_uuid: PositionUuid);
 }
