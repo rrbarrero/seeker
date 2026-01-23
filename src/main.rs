@@ -1,5 +1,5 @@
 pub mod positions;
-pub mod utils;
+pub mod shared;
 
 fn main() {
     println!("Hello, world!");

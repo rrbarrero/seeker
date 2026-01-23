@@ -193,7 +193,7 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::fixtures::{TESTING_UUID, create_fixture_position};
+    use crate::shared::fixtures::{TESTING_UUID, create_fixture_position};
     use uuid::uuid;
 
     use super::*;
