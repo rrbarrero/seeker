@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, NaiveDate};
+use chrono::{DateTime, Local, NaiveDate};
 use uuid::Uuid;
 
 use crate::{
@@ -171,6 +171,9 @@ pub struct Position {
     pub url: Url,
     pub initial_comment: InitialComment,
     pub status: PositionStatus,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+    pub deleted_at: Option<DateTime<Local>>,
 }
 
 pub struct PositionBuilder {
@@ -183,6 +186,9 @@ pub struct PositionBuilder {
     url: Url,
     initial_comment: InitialComment,
     status: PositionStatus,
+    created_at: DateTime<Local>,
+    updated_at: DateTime<Local>,
+    deleted_at: Option<DateTime<Local>>,
 }
 
 impl PositionBuilder {
@@ -235,6 +241,21 @@ impl PositionBuilder {
         self
     }
 
+    pub fn with_created_at(mut self, created_at: DateTime<Local>) -> Self {
+        self.created_at = created_at;
+        self
+    }
+
+    pub fn with_updated_at(mut self, updated_at: DateTime<Local>) -> Self {
+        self.updated_at = updated_at;
+        self
+    }
+
+    pub fn with_deleted_at(mut self, deleted_at: DateTime<Local>) -> Self {
+        self.deleted_at = Some(deleted_at);
+        self
+    }
+
     pub fn build(self) -> Position {
         Position {
             id: self.id,
@@ -246,6 +267,9 @@ impl PositionBuilder {
             url: self.url,
             initial_comment: self.initial_comment,
             status: self.status,
+            created_at: Local::now(),
+            updated_at: Local::now(),
+            deleted_at: None,
         }
     }
 }
@@ -262,6 +286,9 @@ impl Default for PositionBuilder {
             url: Url::new(""),
             initial_comment: InitialComment::new(""),
             status: PositionStatus::CvSent,
+            created_at: Local::now(),
+            updated_at: Local::now(),
+            deleted_at: None,
         }
     }
 }

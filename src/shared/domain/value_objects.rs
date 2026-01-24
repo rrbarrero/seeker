@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::shared::domain::error::UserValueError;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 pub struct UserUuid {
     id: Uuid,
 }

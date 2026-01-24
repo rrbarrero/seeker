@@ -10,6 +10,8 @@ pub enum UserValueError {
     InvalidPassword(String),
     #[error("Error hashing the password: {0:?}")]
     ErrorHashingPassword(#[from] argon2::password_hash::Error),
+    #[error("Error hashing the password: {0:?}")]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 #[derive(Error, Debug)]

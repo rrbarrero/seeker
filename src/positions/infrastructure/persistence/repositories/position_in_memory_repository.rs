@@ -72,12 +72,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_position() {
-        let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
+        let expected_position = create_fixture_position();
+        let repo = create_positions_repo_for_testing(Some(expected_position.clone())).await;
 
         let position_id = PositionUuid::from_str(TESTING_UUID_1).unwrap();
         let position = repo.get(position_id).await.unwrap();
-
-        let expected_position = create_fixture_position();
 
         assert_eq!(position, expected_position);
     }

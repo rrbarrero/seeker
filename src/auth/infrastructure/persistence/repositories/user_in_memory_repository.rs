@@ -30,9 +30,9 @@ impl IUserRepository for UserInMemoryRepository {
             .find(|u| u.id == user_id)
             .cloned()
     }
-    async fn save(&mut self, user: User) -> Result<UserUuid, UserValueError> {
+    async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError> {
         let user_id = user.id.clone();
-        self.users.write().await.push(user);
+        self.users.write().await.push(user.clone());
         Ok(user_id)
     }
 }
@@ -50,7 +50,7 @@ mod tests {
         let mut repo = UserInMemoryRepository::default();
 
         let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
-        let user_uuid = repo.save(user).await?;
+        let user_uuid = repo.save(&user).await?;
 
         assert_eq!(user_uuid, UserUuid::from_str(TESTING_UUID_1)?);
         Ok(())
@@ -61,7 +61,7 @@ mod tests {
         let mut repo = UserInMemoryRepository::default();
 
         let expected_user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
-        let user_uuid = repo.save(expected_user.clone()).await?;
+        let user_uuid = repo.save(&expected_user).await?;
 
         let current_user = repo
             .get(user_uuid)
