@@ -123,7 +123,7 @@ mod tests {
             .get(UserUuid::from_str(TESTING_UUID_2).expect("Failed to create user!"))
             .await;
 
-        if let None = &result {
+        if result.is_none() {
             println!("Error getting user: {:?}", result);
         }
         assert!(result.is_some());
