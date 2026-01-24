@@ -31,7 +31,7 @@ impl IUserRepository for UserInMemoryRepository {
             .cloned()
     }
     async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError> {
-        let user_id = user.id.clone();
+        let user_id = user.id;
         self.users.write().await.push(user.clone());
         Ok(user_id)
     }
