@@ -36,7 +36,7 @@ mod tests {
     use crate::shared::{
         config::Config,
         db_sync,
-        fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID},
+        fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1},
     };
 
     async fn init_test_database() {
@@ -61,7 +61,7 @@ mod tests {
         let config = Config::default();
         let repository = UserPostgresRepository::new(&config).await;
 
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)
+        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)
             .expect("Failed to create user!");
 
         let result = repository.save(&user).await;

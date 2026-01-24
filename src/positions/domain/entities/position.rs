@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::{DateTime, NaiveDate};
 use uuid::Uuid;
 
-use crate::positions::domain::entities::position_error::PositionValueError;
+use crate::{positions::domain::entities::position_error::PositionValueError, shared::domain::{error::UserValueError, value_objects::UserUuid}};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct PositionUuid {
@@ -160,6 +160,7 @@ pub enum PositionStatus {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub id: PositionUuid,
+    pub user_id: UserUuid,
     pub company: Company,
     pub role_title: RoleTitle,
     pub description: Description,
@@ -171,6 +172,7 @@ pub struct Position {
 
 pub struct PositionBuilder {
     id: PositionUuid,
+    user_id: UserUuid,
     company: Company,
     role_title: RoleTitle,
     description: Description,
@@ -187,6 +189,11 @@ impl PositionBuilder {
 
     pub fn with_uuid(mut self, uuid: &str) -> Result<Self, PositionValueError> {
         self.id = PositionUuid::from_str(uuid)?;
+        Ok(self)
+    }
+
+    pub fn with_user_uuid(mut self, uuid: &str) -> Result<Self, UserValueError> {
+        self.user_id = UserUuid::from_str(uuid)?;
         Ok(self)
     }
 
@@ -228,6 +235,7 @@ impl PositionBuilder {
     pub fn build(self) -> Position {
         Position {
             id: self.id,
+            user_id: self.user_id,
             company: self.company,
             role_title: self.role_title,
             description: self.description,
@@ -243,6 +251,7 @@ impl Default for PositionBuilder {
     fn default() -> Self {
         Self {
             id: PositionUuid::new(),
+            user_id: UserUuid::new(),
             company: Company::new(""),
             role_title: RoleTitle::new(""),
             description: Description::new(""),
@@ -256,7 +265,7 @@ impl Default for PositionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::fixtures::{TESTING_UUID, create_fixture_position};
+    use crate::shared::fixtures::{TESTING_UUID_1, create_fixture_position};
     use uuid::uuid;
 
     use super::*;
@@ -281,7 +290,7 @@ mod tests {
     fn test_create_new_position() {
         let position = create_fixture_position();
 
-        assert_eq!(position.id.value(), uuid!(TESTING_UUID));
+        assert_eq!(position.id.value(), uuid!(TESTING_UUID_1));
         assert_eq!(position.company.value(), "hola");
         assert_eq!(position.role_title.value(), "im the role title");
         assert_eq!(

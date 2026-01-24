@@ -3,13 +3,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::auth::domain::{
-    entities::{
-        user::{User, UserUuid},
-        user_error::UserValueError,
-    },
+use crate::{auth::domain::{
+    entities::user::User,
     repositories::user_repository::IUserRepository,
-};
+}, shared::domain::{error::UserValueError, value_objects::UserUuid}};
 
 #[derive(Clone)]
 pub struct UserInMemoryRepository {
@@ -44,7 +41,7 @@ impl IUserRepository for UserInMemoryRepository {
 mod tests {
     use std::str::FromStr;
 
-    use crate::shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID};
+    use crate::shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1};
 
     use super::*;
 
@@ -52,10 +49,10 @@ mod tests {
     async fn test_user_save() -> Result<(), UserValueError> {
         let mut repo = UserInMemoryRepository::default();
 
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
         let user_uuid = repo.save(user).await?;
 
-        assert_eq!(user_uuid, UserUuid::from_str(TESTING_UUID)?);
+        assert_eq!(user_uuid, UserUuid::from_str(TESTING_UUID_1)?);
         Ok(())
     }
 
@@ -63,7 +60,7 @@ mod tests {
     async fn test_get_user() -> Result<(), UserValueError> {
         let mut repo = UserInMemoryRepository::default();
 
-        let expected_user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let expected_user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
         let user_uuid = repo.save(expected_user.clone()).await?;
 
         let current_user = repo

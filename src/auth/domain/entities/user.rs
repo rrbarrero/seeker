@@ -6,39 +6,10 @@ use rand::rngs::OsRng;
 use zxcvbn::{Score, zxcvbn};
 
 use email_address::EmailAddress;
-use uuid::Uuid;
 
-use crate::auth::domain::entities::user_error::UserValueError;
+use crate::shared::domain::{error::UserValueError, value_objects::UserUuid};
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct UserUuid {
-    id: Uuid,
-}
 
-impl Default for UserUuid {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl UserUuid {
-    pub fn value(&self) -> Uuid {
-        self.id
-    }
-
-    pub fn new() -> Self {
-        UserUuid { id: Uuid::new_v4() }
-    }
-}
-
-impl FromStr for UserUuid {
-    type Err = UserValueError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let id = Uuid::parse_str(s)?;
-        Ok(UserUuid { id })
-    }
-}
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserEmail {
@@ -135,8 +106,7 @@ impl User {
 #[cfg(test)]
 mod tests {
     use crate::{
-        auth::domain::entities::user_error::UserValueError,
-        shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID},
+        shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1},
     };
 
     use super::*;
@@ -160,21 +130,21 @@ mod tests {
     #[test]
     fn test_wrong_password() {
         let password = "123";
-        let result = User::new(TESTING_UUID, TESTING_EMAIL, password);
+        let result = User::new(TESTING_UUID_1, TESTING_EMAIL, password);
 
         assert!(matches!(result, Err(UserValueError::InvalidPassword(_))));
     }
 
     #[test]
     fn test_user() {
-        let result = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD);
+        let result = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD);
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_check_password() -> Result<(), UserValueError> {
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
         let result = user.verify_password(TESTING_PASSWORD);
 
         assert!(matches!(result, Ok(true)));
@@ -183,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_check_password_wrong() -> Result<(), UserValueError> {
-        let user = User::new(TESTING_UUID, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
         let result = user.verify_password("123");
 
         assert!(matches!(result, Ok(false)));
@@ -193,7 +163,7 @@ mod tests {
     #[test]
     fn test_not_ascii_password() -> Result<(), UserValueError> {
         let user = User::new(
-            TESTING_UUID,
+            TESTING_UUID_1,
             TESTING_EMAIL,
             "ñÑ☢️fhadsfhKJHlkfhjvnluYu,....",
         )?;

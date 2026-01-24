@@ -1,9 +1,6 @@
 use async_trait::async_trait;
 
-use crate::auth::domain::entities::{
-    user::{User, UserUuid},
-    user_error::UserValueError,
-};
+use crate::{auth::domain::entities::user::User, shared::domain::{error::UserValueError, value_objects::UserUuid}};
 
 #[async_trait]
 pub trait IUserRepository {

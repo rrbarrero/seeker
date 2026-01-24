@@ -52,7 +52,7 @@ impl IPositionRepository for PositionInMemoryRepository {
 mod tests {
     use crate::{
         positions::domain::entities::position::PositionBuilder,
-        shared::fixtures::{TESTING_UUID, create_fixture_position},
+        shared::fixtures::{TESTING_UUID_1, create_fixture_position},
     };
     use std::str::FromStr;
 
@@ -74,7 +74,7 @@ mod tests {
     async fn test_get_position() {
         let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        let position_id = PositionUuid::from_str(TESTING_UUID).unwrap();
+        let position_id = PositionUuid::from_str(TESTING_UUID_1).unwrap();
         let position = repo.get(position_id).await.unwrap();
 
         let expected_position = create_fixture_position();
@@ -90,7 +90,7 @@ mod tests {
 
         assert_eq!(
             position_uuid.unwrap(),
-            PositionUuid::from_str(TESTING_UUID).unwrap()
+            PositionUuid::from_str(TESTING_UUID_1).unwrap()
         );
 
         assert_eq!(repo.get_all().await.len(), 1);
@@ -125,7 +125,7 @@ mod tests {
     async fn test_remove_position() {
         let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        let position_id = PositionUuid::from_str(TESTING_UUID).unwrap();
+        let position_id = PositionUuid::from_str(TESTING_UUID_1).unwrap();
         let _ = repo.remove(position_id).await;
 
         assert_eq!(repo.get_all().await.len(), 0);

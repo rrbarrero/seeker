@@ -1,13 +1,16 @@
 use crate::positions::domain::entities::position::{Position, PositionBuilder, PositionStatus};
 
-pub static TESTING_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+pub static TESTING_UUID_1: &str = "67e55044-10b1-426f-9247-bb680e5fe0c1";
+pub static TESTING_UUID_2: &str = "67e55044-10b1-426f-9247-bb680e5fe0c2";
 pub static TESTING_DATE: &str = "Fri, 23 Jan 2026 10:10:10 +0200";
 pub static TESTING_EMAIL: &str = "test@example.com";
 pub static TESTING_PASSWORD: &str = "klerjLKj2k3jfvkhf,uiuhNJLK2)(/";
 
 pub fn create_fixture_position() -> Position {
     PositionBuilder::default()
-        .with_uuid(TESTING_UUID)
+        .with_uuid(TESTING_UUID_1)
+        .unwrap()
+        .with_user_uuid(TESTING_UUID_2)
         .unwrap()
         .with_company("hola")
         .with_role_title("im the role title")
