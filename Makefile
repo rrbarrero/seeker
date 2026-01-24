@@ -10,3 +10,6 @@ prepare:
 
 build:
 	docker compose build
+
+format:
+	cargo -- fmt
