@@ -9,8 +9,6 @@ use email_address::EmailAddress;
 
 use crate::shared::domain::{error::UserValueError, value_objects::UserUuid};
 
-
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserEmail {
     email: String,
@@ -105,9 +103,7 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1},
-    };
+    use crate::shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1};
 
     use super::*;
 

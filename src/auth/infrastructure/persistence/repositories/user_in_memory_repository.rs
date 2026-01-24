@@ -3,10 +3,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::{auth::domain::{
-    entities::user::User,
-    repositories::user_repository::IUserRepository,
-}, shared::domain::{error::UserValueError, value_objects::UserUuid}};
+use crate::{
+    auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
+    shared::domain::{error::UserValueError, value_objects::UserUuid},
+};
 
 #[derive(Clone)]
 pub struct UserInMemoryRepository {
