@@ -10,10 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      postgres:
+      db:
         image: postgres:15-alpine
         env:
-          POSTGRES_DB: test_db
+          POSTGRES_DB: testdb
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -24,8 +24,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
-      ENVIRONMENT: test
+      DATABASE_URL: postgres://postgres:postgres@db:5432/testdb
+      ENVIRONMENT: testing
       SQLX_OFFLINE: true
     steps:
       - name: Checkout
