@@ -1,7 +1,7 @@
 .PHONY: test format check 
 
 test:
-	docker compose run --rm test cargo test -- --test-threads=4
+	docker compose run --rm test cargo test -- --test-threads=6
 
 prepare:
 	set -a && . ./.env && set +a && \
@@ -14,4 +14,4 @@ format:
 	docker compose run --rm test cargo fmt
 
 check:
-	docker compose run --rm test /bin/bash -c "cargo check && cargo clippy --all-targets --all-features -- -D warnings && cargo test -- --test-threads=4"
+	docker compose run --rm test /bin/bash -c "cargo check && cargo clippy --all-targets --all-features -- -D warnings && cargo test -- --test-threads=6"
