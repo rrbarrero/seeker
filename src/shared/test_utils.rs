@@ -1,12 +1,9 @@
 use crate::auth::domain::entities::user::User;
 use crate::shared::config::Config;
+use crate::shared::factory::get_or_create_postgres_pool;
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use tokio::sync::OnceCell;
-
-use crate::shared::factory::create_postgres_pool;
 
 pub struct TestFactory {
     pub pool: PgPool,
@@ -14,17 +11,10 @@ pub struct TestFactory {
     pub created_positions: Vec<Uuid>,
 }
 
-static POOL: OnceCell<PgPool> = OnceCell::const_new();
-
 impl TestFactory {
     pub async fn new() -> Self {
-        let pool = POOL
-            .get_or_init(|| async {
-                let config = Config::default();
-                create_postgres_pool(&config).await
-            })
-            .await
-            .clone();
+        let config = Config::default();
+        let pool = get_or_create_postgres_pool(&config).await;
 
         Self {
             pool,

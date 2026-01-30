@@ -1,10 +1,10 @@
 use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::positions::infrastructure::persistence::repositories::position_postgres_repository::PositionPostgresRepository;
 use crate::shared::config::Config;
-use crate::shared::infra::postgres_conn::create_pool;
+use crate::shared::infra::postgres_conn::get_or_create_pool;
 
-pub async fn create_postgres_pool(config: &Config) -> sqlx::postgres::PgPool {
-    create_pool(config).await
+pub async fn get_or_create_postgres_pool(config: &Config) -> sqlx::postgres::PgPool {
+    get_or_create_pool(config).await
 }
 
 pub async fn create_position_postgres_repository(
