@@ -2,10 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
-    shared::{
-        config::Config,
-        domain::{error::UserValueError, value_objects::UserUuid},
-    },
+    shared::domain::{error::UserValueError, value_objects::UserUuid},
 };
 
 pub struct UserPostgresRepository {
@@ -13,12 +10,8 @@ pub struct UserPostgresRepository {
 }
 
 impl UserPostgresRepository {
-    pub async fn new(config: &Config) -> Self {
-        Self {
-            pool: sqlx::postgres::PgPool::connect(&config.postgres_url)
-                .await
-                .unwrap(),
-        }
+    pub async fn new(pool: sqlx::postgres::PgPool) -> Self {
+        Self { pool }
     }
 }
 
@@ -39,95 +32,50 @@ impl IUserRepository for UserPostgresRepository {
         Ok(user.id)
     }
     async fn get(&self, user_id: UserUuid) -> Option<User> {
-        let user: Option<Result<User, UserValueError>> =
-            sqlx::query!("SELECT * FROM users WHERE id = $1", user_id.value())
-                .fetch_one(&self.pool)
-                .await
-                .ok()
-                .map(|user| User::new(&user.id.to_string(), &user.email, &user.password));
-        user.unwrap().ok()
+        sqlx::query!("SELECT * FROM users WHERE id = $1", user_id.value())
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap_or(None)
+            .and_then(|row| User::new(&row.id.to_string(), &row.email, &row.password).ok())
     }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use std::str::FromStr;
-
     use super::*;
-    use crate::shared::{
-        config::Config,
-        db_sync,
-        fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1, TESTING_UUID_2},
-    };
-
-    async fn init_test_database() {
-        let config = Config::default();
-        let _ = db_sync::db_sync(&config).await;
-    }
-
-    async fn delete_user(config: &Config, user_id: &str) {
-        let pool = sqlx::postgres::PgPool::connect(&config.postgres_url)
-            .await
-            .unwrap();
-        sqlx::query("DELETE FROM users WHERE id = $1::uuid")
-            .bind(user_id)
-            .execute(&pool)
-            .await
-            .unwrap();
-    }
+    use crate::shared::test_utils::TestFactory;
 
     #[tokio::test]
     async fn test_save_user_postgres_repository() {
-        init_test_database().await;
+        let factory = TestFactory::new().await;
 
-        let config = Config::default();
+        let pool = factory.pool.clone();
+        let mut repository = UserPostgresRepository::new(pool).await;
 
-        delete_user(&config, TESTING_UUID_1).await;
-
-        let mut repository = UserPostgresRepository::new(&config).await;
-
-        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)
-            .expect("Failed to create user!");
+        let id = uuid::Uuid::new_v4();
+        let email = format!("test.{}@example.com", id);
+        let password = "S0m3V3ryStr0ngP@ssw0rd!";
+        let user = User::new(&id.to_string(), &email, password).expect("User creation failed");
 
         let result = repository.save(&user).await;
 
-        if let Err(e) = &result {
-            println!("Error saving user: {:?}", e);
-        }
         assert!(result.is_ok());
-
-        delete_user(&config, TESTING_UUID_1).await;
     }
 
     #[tokio::test]
     async fn test_get_user_postgres_repository() {
-        init_test_database().await;
+        let mut factory = TestFactory::new().await;
 
-        let config = Config::default();
-        delete_user(&config, TESTING_UUID_2).await;
+        let user = factory.create_random_user().await;
 
-        let mut repository = UserPostgresRepository::new(&config).await;
+        let pool = factory.pool.clone();
+        let repository = UserPostgresRepository::new(pool).await;
 
-        let user = User::new(TESTING_UUID_2, TESTING_EMAIL, TESTING_PASSWORD)
-            .expect("Failed to create user!");
+        let result = repository.get(user.id).await;
 
-        let result = repository.save(&user).await;
-
-        if let Err(e) = &result {
-            println!("Error saving user: {:?}", e);
-        }
-        assert!(result.is_ok());
-
-        let result = repository
-            .get(UserUuid::from_str(TESTING_UUID_2).expect("Failed to create user!"))
-            .await;
-
-        if result.is_none() {
-            println!("Error getting user: {:?}", result);
-        }
         assert!(result.is_some());
+        assert_eq!(result.unwrap().id, user.id);
 
-        delete_user(&config, TESTING_UUID_2).await;
+        factory.teardown().await;
     }
 }

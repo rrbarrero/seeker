@@ -103,9 +103,20 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1};
+    use uuid::Uuid;
 
     use super::*;
+
+    // Helper to get consistent valid data for tests
+    fn valid_email() -> &'static str {
+        "test@example.com"
+    }
+    fn valid_password() -> &'static str {
+        "S0m3V3ryStr0ngP@ssw0rd!"
+    }
+    fn valid_id() -> String {
+        Uuid::new_v4().to_string()
+    }
 
     #[test]
     fn test_wrong_uuid() {
@@ -126,22 +137,23 @@ mod tests {
     #[test]
     fn test_wrong_password() {
         let password = "123";
-        let result = User::new(TESTING_UUID_1, TESTING_EMAIL, password);
+        let result = User::new(&valid_id(), valid_email(), password);
 
         assert!(matches!(result, Err(UserValueError::InvalidPassword(_))));
     }
 
     #[test]
     fn test_user() {
-        let result = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD);
+        let result = User::new(&valid_id(), valid_email(), valid_password());
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_check_password() -> Result<(), UserValueError> {
-        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
-        let result = user.verify_password(TESTING_PASSWORD);
+        let password = valid_password();
+        let user = User::new(&valid_id(), valid_email(), password)?;
+        let result = user.verify_password(password);
 
         assert!(matches!(result, Ok(true)));
         Ok(())
@@ -149,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_check_password_wrong() -> Result<(), UserValueError> {
-        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let user = User::new(&valid_id(), valid_email(), valid_password())?;
         let result = user.verify_password("123");
 
         assert!(matches!(result, Ok(false)));
@@ -158,12 +170,9 @@ mod tests {
 
     #[test]
     fn test_not_ascii_password() -> Result<(), UserValueError> {
-        let user = User::new(
-            TESTING_UUID_1,
-            TESTING_EMAIL,
-            "ñÑ☢️fhadsfhKJHlkfhjvnluYu,....",
-        )?;
-        let result = user.verify_password("ñÑ☢️fhadsfhKJHlkfhjvnluYu,....");
+        let password = "ñÑ☢️fhadsfhKJHlkfhjvnluYu,....";
+        let user = User::new(&valid_id(), valid_email(), password)?;
+        let result = user.verify_password(password);
 
         assert!(matches!(result, Ok(true)));
         Ok(())

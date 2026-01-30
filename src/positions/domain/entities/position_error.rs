@@ -7,7 +7,16 @@ pub enum PositionValueError {
 
     #[error("Wrong date format: `{0}`")]
     InvalidDate(#[from] chrono::format::ParseError),
+
+    #[error("Invalid status: `{0}`")]
+    InvalidStatus(String),
+
+    #[error("Invalid user uuid: `{0}`")]
+    InvalidUserUuid(String),
 }
 
 #[derive(Error, Debug)]
-pub enum PositionRepositoryError {}
+pub enum PositionRepositoryError {
+    #[error("Database error: `{0}`")]
+    DatabaseError(#[from] sqlx::Error),
+}

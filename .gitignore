@@ -2,3 +2,4 @@
 .ignored-folder
 .env
 .env.test
+.agent

@@ -39,20 +39,32 @@ impl IUserRepository for UserInMemoryRepository {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use crate::shared::fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1};
+    use uuid::Uuid;
 
     use super::*;
+
+    // Helpers
+    fn valid_email() -> &'static str {
+        "test@example.com"
+    }
+    fn valid_password() -> &'static str {
+        "S0m3V3ryStr0ngP@ssw0rd!"
+    }
+    fn valid_id() -> String {
+        Uuid::new_v4().to_string()
+    }
 
     #[tokio::test]
     async fn test_user_save() -> Result<(), UserValueError> {
         let mut repo = UserInMemoryRepository::default();
 
-        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
+        let id = valid_id();
+        let user = User::new(&id, valid_email(), valid_password())?;
+        let user_id_copy = user.id;
+
         let user_uuid = repo.save(&user).await?;
 
-        assert_eq!(user_uuid, UserUuid::from_str(TESTING_UUID_1)?);
+        assert_eq!(user_uuid, user_id_copy);
         Ok(())
     }
 
@@ -60,15 +72,15 @@ mod tests {
     async fn test_get_user() -> Result<(), UserValueError> {
         let mut repo = UserInMemoryRepository::default();
 
-        let expected_user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)?;
-        let user_uuid = repo.save(&expected_user).await?;
+        let user = User::new(&valid_id(), valid_email(), valid_password())?;
+        let user_uuid = repo.save(&user).await?;
 
         let current_user = repo
             .get(user_uuid)
             .await
             .expect("Result user was expected at this point!");
 
-        assert_eq!(current_user, expected_user);
+        assert_eq!(current_user, user);
         Ok(())
     }
 }
