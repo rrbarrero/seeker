@@ -124,7 +124,12 @@ impl IPositionRepository for PositionPostgresRepository {
     }
 
     async fn remove(&mut self, _position_uuid: PositionUuid) {
-        todo!()
+        let _ = sqlx::query!(
+            "DELETE FROM positions WHERE id = $1",
+            _position_uuid.value()
+        )
+        .execute(&self.pool)
+        .await;
     }
 }
 
@@ -205,6 +210,34 @@ mod tests {
         let result = repository.get(position_id).await;
 
         assert!(result.is_some());
+
+        factory.teardown().await;
+    }
+
+    #[tokio::test]
+    async fn test_remove_position_postgres_repository() {
+        let mut factory = TestFactory::new().await;
+
+        let user = factory.create_random_user().await;
+
+        let pool = factory.pool.clone();
+        let mut repository = PositionPostgresRepository::new(pool).await;
+
+        let mut position = create_fixture_position();
+
+        position.id = PositionUuid::new();
+        position.user_id = user.id;
+
+        factory.created_positions.push(position.id.value());
+        let result = repository.save(position).await;
+
+        let position_id = result.expect("Should save position");
+
+        let _ = repository.remove(position_id.clone()).await;
+
+        let result = repository.get(position_id).await;
+
+        assert!(result.is_none());
 
         factory.teardown().await;
     }
