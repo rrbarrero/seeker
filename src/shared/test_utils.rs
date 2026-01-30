@@ -1,6 +1,6 @@
 use crate::auth::domain::entities::user::User;
+use crate::composition_root::get_or_create_postgres_pool;
 use crate::shared::config::Config;
-use crate::shared::factory::get_or_create_postgres_pool;
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;

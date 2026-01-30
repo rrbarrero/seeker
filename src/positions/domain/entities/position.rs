@@ -113,7 +113,7 @@ impl AppliedOn {
 
 impl Default for AppliedOn {
     fn default() -> Self {
-        let parsed_date = DateTime::parse_from_rfc2822("Fri, 23 Jan 2026 10:10:10 +0200").unwrap();
+        let parsed_date = chrono::offset::Local::now();
         Self {
             applied_on: parsed_date.date_naive(),
         }

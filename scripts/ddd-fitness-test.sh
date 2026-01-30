@@ -1,51 +1,136 @@
 #!/bin/bash
-# DDD Fitness Test: Enforce Bounded Context Isolation
-# Rules: 
-# 1. src/{context}/* cannot import from crate::{other_context} directly.
-# 2. allowed: crate::{context}::*, crate::shared::*
+# DDD Fitness Test: Enforced Architectural Boundaries
+# This script ensures that the codebase adheres to Bounded Context isolation 
+# and Clean Architecture layer dependencies.
 
 set -e
 
 BCS=$(ls src | grep -vE "^(shared|main.rs|lib.rs)$")
 EXIT_CODE=0
 
-echo "🔍 Running DDD Fitness Test..."
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Rule 1: Bounded Context Isolation
+echo -e "${YELLOW}🔍 Running DDD & Clean Architecture Fitness Test...${NC}\n"
+
+function check_violation() {
+    local rule_name=$1
+    local search_path=$2
+    local pattern=$3
+    local message=$4
+    
+    VIOLATIONS=$(grep -rnE "$pattern" "$search_path" || true)
+    
+    if [ ! -z "$VIOLATIONS" ]; then
+        echo -e "${RED}❌ VIOLATION: $rule_name${NC}"
+        echo -e "   ${YELLOW}Reason:${NC} $message"
+        echo "$VIOLATIONS" | sed 's/^/   /'
+        EXIT_CODE=1
+    fi
+}
+
+# 1. Bounded Context Isolation
+echo "Checking Bounded Context Isolation..."
 for BC in $BCS; do
     if [ ! -d "src/$BC" ]; then continue; fi
-    
-    OTHER_BCS=$(ls src | grep -vE "^($BC|shared|main.rs|lib.rs)$")
+    OTHER_BCS=$(echo "$BCS" | grep -vE "^$BC$")
     
     for OTHER in $OTHER_BCS; do
-        VIOLATIONS=$(grep -rn "use crate::$OTHER" "src/$BC" || true)
-        
-        if [ ! -z "$VIOLATIONS" ]; then
-            echo "❌ DDD VIOLATION: Bounded Context '$BC' imports directly from '$OTHER'"
-            echo "   Files found:"
-            echo "$VIOLATIONS" | sed 's/^/   /'
-            EXIT_CODE=1
-        fi
+        check_violation \
+            "Cross-Context Leakage" \
+            "src/$BC" \
+            "use crate::$OTHER" \
+            "Context '$BC' cannot import directly from '$OTHER'. Use 'shared' or events."
     done
+done
 
-    # Rule 2: Domain Layer is the Core (cannot import from outer layers)
+# 2. Layered Architecture: Domain Purity
+echo "Checking Domain Layer Purity..."
+for BC in $BCS; do
     if [ -d "src/$BC/domain" ]; then
-        # Within src/BC/domain, we check for imports from application, infrastructure, or presentation
-        LAYER_VIOLATIONS=$(grep -rnE "use crate::$BC::(application|infrastructure|presentation)" "src/$BC/domain" || true)
-        
-        if [ ! -z "$LAYER_VIOLATIONS" ]; then
-            echo "❌ DDD VIOLATION: Domain layer in '$BC' depends on outer layers!"
-            echo "   Files found:"
-            echo "$LAYER_VIOLATIONS" | sed 's/^/   /'
-            EXIT_CODE=1
-        fi
+        # Rule: Domain cannot depend on Application, Infra, or Presentation
+        check_violation \
+            "Domain Layer Leak" \
+            "src/$BC/domain" \
+            "use crate::$BC::(application|infrastructure|presentation)" \
+            "Domain layer in '$BC' depends on outer layers!"
+
+        # Rule: No Infrastructure libraries in Domain
+        check_violation \
+            "Infrastructure Leak in Domain" \
+            "src/$BC/domain" \
+            "use (sqlx|reqwest|postgres|diesel|warp|axum|hyper|redis|serde)" \
+            "Domain layer contains infrastructure-specific dependencies (including serialization)."
+
+        # Rule: No panics or unwraps in Domain (use Result)
+        check_violation \
+            "Unsafe operations in Domain" \
+            "src/$BC/domain" \
+            "\.(unwrap|expect)\(" \
+            "Domain layer should use Result handling instead of panics (unwrap/expect)."
     fi
 done
 
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ DDD Fitness Test passed! Bounded contexts and domain layers are isolated."
-else
-    echo "❌ DDD Fitness Test failed! Please check architectural boundaries."
+# 3. Layered Architecture: Application Layer Isolation
+echo "Checking Application Layer Isolation..."
+for BC in $BCS; do
+    if [ -d "src/$BC/application" ]; then
+        # Rule: Application cannot depend on Infrastructure or Presentation
+        check_violation \
+            "Application Layer Leak" \
+            "src/$BC/application" \
+            "use crate::$BC::(infrastructure|presentation)" \
+            "Application layer in '$BC' depends on outer layers!"
+    fi
+done
+
+# 4. Layered Architecture: Presentation Isolation
+echo "Checking Presentation Layer Isolation..."
+for BC in $BCS; do
+    if [ -d "src/$BC/presentation" ]; then
+        # Rule: Presentation should not call Infrastructure directly
+        check_violation \
+            "Presentation calls Infrastructure" \
+            "src/$BC/presentation" \
+            "use crate::$BC::infrastructure" \
+            "Presentation layer should go through Application layer, not direct to Infrastructure."
+    fi
+done
+
+# 5. Shared Layer Purity
+echo "Checking Shared Layer Purity..."
+if [ -d "src/shared" ]; then
+    # Rule: Shared/Domain should not depend on any Bounded Context
+    if [ -d "src/shared/domain" ]; then
+        for BC in $BCS; do
+            check_violation \
+                "Shared Domain Leak" \
+                "src/shared/domain" \
+                "use crate::$BC" \
+                "Shared Domain cannot depend on specific Bounded Context '$BC'."
+        done
+    fi
+
+    # Rule: Shared should not import from Infrastructure of any BC (even in factory)
+    # This is negotiable, but usually Shared Infra should be generic.
+    for BC in $BCS; do
+        check_violation \
+            "Shared calling BC Infrastructure" \
+            "src/shared" \
+            "use crate::$BC::infrastructure" \
+            "Shared layer should not depend on specific BC infrastructure. Use dependency injection."
+    done
 fi
+
+echo -e "\n--------------------------------------------------"
+if [ $EXIT_CODE -eq 0 ]; then
+    echo -e "${GREEN}✅ DDD Fitness Test passed! Architectural boundaries are solid.${NC}"
+else
+    echo -e "${RED}❌ DDD Fitness Test failed! Please fix the violations listed above.${NC}"
+fi
+echo "--------------------------------------------------"
 
 exit $EXIT_CODE
