@@ -7,11 +7,10 @@ pub enum ConfigError {
     InvalidConfiguration(#[from] std::env::VarError),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Environment {
-    Development,
     Production,
-    Test,
+    Testing,
 }
 
 pub struct Config {
@@ -21,25 +20,33 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Config {
-        let environment = match env::var("ENVIRONMENT") {
-            Ok(env) => match env.as_str() {
-                "development" => Environment::Development,
-                "production" => Environment::Production,
-                "test" => Environment::Test,
-                _ => panic!("Invalid environment"),
-            },
-            Err(_) => panic!("Environment not set"),
+        dotenvy::dotenv().ok();
+
+        let environment = match env::var("ENVIRONMENT")
+            .unwrap_or_else(|_| "production".to_string())
+            .to_lowercase()
+            .as_str()
+        {
+            "testing" => Environment::Testing,
+            _ => Environment::Production,
+        };
+
+        let postgres_url = match environment {
+            Environment::Testing => {
+                format!("postgres://postgres:postgres@db:5432/testdb")
+            }
+            Environment::Production => Self::build_production_database_url(),
         };
 
         Config {
-            postgres_url: Self::build_database_url(),
+            postgres_url,
             environment,
         }
     }
 }
 
 impl Config {
-    fn build_database_url() -> String {
+    fn build_production_database_url() -> String {
         env::var("DATABASE_URL").unwrap_or_else(|_| {
             let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
             let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
@@ -58,19 +65,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_config_load() {
-        let config = Config::default();
+    fn test_config_load_testing() {
+        temp_env::with_var("ENVIRONMENT", Some("testing"), || {
+            let config = Config::default();
+            assert_eq!(config.environment, Environment::Testing);
 
-        assert_eq!(config.environment, Environment::Test);
-        let expected_url = format!(
-            "postgres://{}:{}@{}:{}/{}",
-            std::env::var("POSTGRES_USER").unwrap_or("postgres".to_string()),
-            std::env::var("POSTGRES_PASSWORD").unwrap_or("postgres".to_string()),
-            std::env::var("POSTGRES_HOST").unwrap_or("localhost".to_string()),
-            std::env::var("POSTGRES_PORT").unwrap_or("5432".to_string()),
-            std::env::var("POSTGRES_DB").unwrap_or("testdb".to_string())
-        );
+            let expected_url = "postgres://postgres:postgres@db:5432/testdb";
 
-        assert_eq!(config.postgres_url, expected_url);
+            assert_eq!(config.postgres_url, expected_url);
+        });
+    }
+
+    #[test]
+    fn test_config_load_production_default() {
+        // Ensure ENVIRONMENT is unset or set to something else
+        temp_env::with_var_unset("ENVIRONMENT", || {
+            let config = Config::default();
+            assert_eq!(config.environment, Environment::Production);
+        });
     }
 }

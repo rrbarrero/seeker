@@ -1,7 +1,7 @@
 .PHONY: test 
 
 test:
-	set -a && . ./.env.test && set +a && cargo test
+	docker compose run --rm test cargo test
 
 prepare:
 	set -a && . ./.env && set +a && \
