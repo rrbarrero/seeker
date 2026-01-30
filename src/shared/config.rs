@@ -32,9 +32,7 @@ impl Default for Config {
         };
 
         let postgres_url = match environment {
-            Environment::Testing => {
-                format!("postgres://postgres:postgres@db:5432/testdb")
-            }
+            Environment::Testing => "postgres://postgres:postgres@db:5432/testdb".to_string(),
             Environment::Production => Self::build_production_database_url(),
         };
 
