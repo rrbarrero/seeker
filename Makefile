@@ -1,7 +1,7 @@
-.PHONY: test 
+.PHONY: test format check 
 
 test:
-	docker compose run --rm test cargo test
+	docker compose run --rm test cargo test -- --test-threads=8
 
 prepare:
 	set -a && . ./.env && set +a && \
@@ -11,4 +11,9 @@ build:
 	docker compose build
 
 format:
-	cargo -- fmt
+	docker compose run --rm test cargo fmt
+
+check:
+	docker compose run --rm test cargo check 
+	docker compose run --rm test cargo clippy
+	docker compose run --rm test cargo test -- --test-threads=8

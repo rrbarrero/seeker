@@ -32,13 +32,11 @@ impl IUserRepository for UserPostgresRepository {
         Ok(user.id)
     }
     async fn get(&self, user_id: UserUuid) -> Option<User> {
-        let user: Option<Result<User, UserValueError>> =
-            sqlx::query!("SELECT * FROM users WHERE id = $1", user_id.value())
-                .fetch_one(&self.pool)
-                .await
-                .ok()
-                .map(|user| User::new(&user.id.to_string(), &user.email, &user.password));
-        user.unwrap().ok()
+        sqlx::query!("SELECT * FROM users WHERE id = $1", user_id.value())
+            .fetch_optional(&self.pool)
+            .await
+            .unwrap_or(None)
+            .and_then(|row| User::new(&row.id.to_string(), &row.email, &row.password).ok())
     }
 }
 

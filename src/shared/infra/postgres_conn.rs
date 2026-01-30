@@ -1,7 +1,9 @@
 use crate::shared::config::Config;
+use sqlx::postgres::PgPoolOptions;
 
 pub async fn create_pool(config: &Config) -> sqlx::postgres::PgPool {
-    sqlx::postgres::PgPool::connect(&config.postgres_url)
+    PgPoolOptions::new()
+        .connect(&config.postgres_url)
         .await
         .unwrap()
 }

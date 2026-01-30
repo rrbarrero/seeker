@@ -4,6 +4,8 @@ use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use tokio::sync::OnceCell;
+
 use crate::shared::factory::create_postgres_pool;
 
 pub struct TestFactory {
@@ -12,10 +14,18 @@ pub struct TestFactory {
     pub created_positions: Vec<Uuid>,
 }
 
+static POOL: OnceCell<PgPool> = OnceCell::const_new();
+
 impl TestFactory {
     pub async fn new() -> Self {
-        let config = Config::default();
-        let pool = create_postgres_pool(&config).await;
+        let pool = POOL
+            .get_or_init(|| async {
+                let config = Config::default();
+                create_postgres_pool(&config).await
+            })
+            .await
+            .clone();
+
         Self {
             pool,
             created_users: Vec::new(),
