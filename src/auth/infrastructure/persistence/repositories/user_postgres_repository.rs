@@ -44,88 +44,40 @@ impl IUserRepository for UserPostgresRepository {
 
 #[cfg(test)]
 mod tests {
-
-    use std::str::FromStr;
-
     use super::*;
-    use crate::shared::{
-        config::Config,
-        db_sync,
-        factory::create_postgres_pool,
-        fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1, TESTING_UUID_2},
-    };
-
-    async fn init_test_database() {
-        let config = Config::default();
-        let _ = db_sync::db_sync(&config).await;
-    }
-
-    async fn delete_user(config: &Config, user_id: &str) {
-        let pool = sqlx::postgres::PgPool::connect(&config.postgres_url)
-            .await
-            .unwrap();
-        sqlx::query("DELETE FROM users WHERE id = $1::uuid")
-            .bind(user_id)
-            .execute(&pool)
-            .await
-            .unwrap();
-    }
+    use crate::shared::test_utils::TestFactory;
 
     #[tokio::test]
     async fn test_save_user_postgres_repository() {
-        init_test_database().await;
+        let factory = TestFactory::new().await;
 
-        let config = Config::default();
-
-        delete_user(&config, TESTING_UUID_1).await;
-
-        let pool = create_postgres_pool(&config).await;
-
+        let pool = factory.pool.clone();
         let mut repository = UserPostgresRepository::new(pool).await;
 
-        let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)
-            .expect("Failed to create user!");
+        let id = uuid::Uuid::new_v4();
+        let email = format!("test.{}@example.com", id);
+        let password = "S0m3V3ryStr0ngP@ssw0rd!";
+        let user = User::new(&id.to_string(), &email, password).expect("User creation failed");
 
         let result = repository.save(&user).await;
 
-        if let Err(e) = &result {
-            println!("Error saving user: {:?}", e);
-        }
         assert!(result.is_ok());
-
-        delete_user(&config, TESTING_UUID_1).await;
     }
 
     #[tokio::test]
     async fn test_get_user_postgres_repository() {
-        init_test_database().await;
+        let mut factory = TestFactory::new().await;
 
-        let config = Config::default();
-        delete_user(&config, TESTING_UUID_2).await;
+        let user = factory.create_random_user().await;
 
-        let pool = create_postgres_pool(&config).await;
+        let pool = factory.pool.clone();
+        let repository = UserPostgresRepository::new(pool).await;
 
-        let mut repository = UserPostgresRepository::new(pool).await;
+        let result = repository.get(user.id.clone()).await;
 
-        let user = User::new(TESTING_UUID_2, TESTING_EMAIL, TESTING_PASSWORD)
-            .expect("Failed to create user!");
-
-        let result = repository.save(&user).await;
-
-        if let Err(e) = &result {
-            println!("Error saving user: {:?}", e);
-        }
-        assert!(result.is_ok());
-
-        let result = repository
-            .get(UserUuid::from_str(TESTING_UUID_2).expect("Failed to create user!"))
-            .await;
-
-        if let None = &result {
-            println!("Error getting user: {:?}", result);
-        }
         assert!(result.is_some());
+        assert_eq!(result.unwrap().id, user.id);
 
-        delete_user(&config, TESTING_UUID_2).await;
+        factory.teardown().await;
     }
 }

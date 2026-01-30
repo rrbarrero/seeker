@@ -4,3 +4,4 @@ pub mod domain;
 pub mod factory;
 pub mod fixtures;
 pub mod infra;
+pub mod test_utils;

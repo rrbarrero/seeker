@@ -52,9 +52,8 @@ impl IPositionRepository for PositionInMemoryRepository {
 mod tests {
     use crate::{
         positions::domain::entities::position::PositionBuilder,
-        shared::fixtures::{TESTING_UUID_1, create_fixture_position},
+        shared::fixtures::create_fixture_position,
     };
-    use std::str::FromStr;
 
     use super::*;
 
@@ -75,8 +74,7 @@ mod tests {
         let expected_position = create_fixture_position();
         let repo = create_positions_repo_for_testing(Some(expected_position.clone())).await;
 
-        let position_id = PositionUuid::from_str(TESTING_UUID_1).unwrap();
-        let position = repo.get(position_id).await.unwrap();
+        let position = repo.get(expected_position.id.clone()).await.unwrap();
 
         assert_eq!(position, expected_position);
     }
@@ -84,13 +82,12 @@ mod tests {
     #[tokio::test]
     async fn test_save_position() {
         let mut repo = create_positions_repo_for_testing(None).await;
+        let position = create_fixture_position();
+        let expected_id = position.id.clone();
 
-        let position_uuid = repo.save(create_fixture_position()).await;
+        let position_uuid = repo.save(position).await;
 
-        assert_eq!(
-            position_uuid.unwrap(),
-            PositionUuid::from_str(TESTING_UUID_1).unwrap()
-        );
+        assert_eq!(position_uuid.unwrap(), expected_id);
 
         assert_eq!(repo.get_all().await.len(), 1);
     }
@@ -122,10 +119,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_remove_position() {
-        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
+        let position = create_fixture_position();
+        let mut repo = create_positions_repo_for_testing(Some(position.clone())).await;
 
-        let position_id = PositionUuid::from_str(TESTING_UUID_1).unwrap();
-        let _ = repo.remove(position_id).await;
+        let _ = repo.remove(position.id).await;
 
         assert_eq!(repo.get_all().await.len(), 0);
     }
@@ -134,7 +131,7 @@ mod tests {
     async fn test_remove_position_not_found() {
         let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
+        let position_id = PositionUuid::new();
         let _ = repo.remove(position_id).await;
 
         assert_eq!(repo.get_all().await.len(), 1);
@@ -158,7 +155,7 @@ mod tests {
     async fn test_get_position_not_found() {
         let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        let position_id = PositionUuid::from_str("67e55044-10b1-426f-9247-bb680e5fe0c9").unwrap();
+        let position_id = PositionUuid::new();
         let position = repo.get(position_id).await;
 
         assert_eq!(position, None);

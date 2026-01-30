@@ -295,8 +295,7 @@ impl Default for PositionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::fixtures::{TESTING_UUID_1, create_fixture_position};
-    use uuid::uuid;
+    use crate::shared::fixtures::create_fixture_position;
 
     use super::*;
 
@@ -320,7 +319,6 @@ mod tests {
     fn test_create_new_position() {
         let position = create_fixture_position();
 
-        assert_eq!(position.id.value(), uuid!(TESTING_UUID_1));
         assert_eq!(position.company.value(), "hola");
         assert_eq!(position.role_title.value(), "im the role title");
         assert_eq!(
