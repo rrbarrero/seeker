@@ -46,13 +46,23 @@ impl TestFactory {
     }
 
     pub async fn teardown(&self) {
-        for id in &self.created_users {
-            let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
+        // Delete all positions for our created users first to avoid FK violations
+        for user_id in &self.created_users {
+            let _ = sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)
                 .execute(&self.pool)
                 .await;
         }
+
+        // Now delete individual positions that might not have been caught (though shouldn't exist)
         for id in &self.created_positions {
             let _ = sqlx::query!("DELETE FROM positions WHERE id = $1", id)
+                .execute(&self.pool)
+                .await;
+        }
+
+        // Finally delete users
+        for id in &self.created_users {
+            let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
                 .execute(&self.pool)
                 .await;
         }

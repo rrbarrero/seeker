@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     positions::domain::entities::position_error::PositionValueError,
-    shared::domain::{error::UserValueError, value_objects::UserUuid},
+    shared::domain::value_objects::UserUuid,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -105,6 +105,10 @@ impl AppliedOn {
             applied_on: parsed_date.date_naive(),
         })
     }
+
+    pub fn from_date(date: NaiveDate) -> Self {
+        Self { applied_on: date }
+    }
 }
 
 impl Default for AppliedOn {
@@ -160,6 +164,36 @@ pub enum PositionStatus {
     Withdrawn,
 }
 
+impl FromStr for PositionStatus {
+    type Err = PositionValueError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "CvSent" => Ok(PositionStatus::CvSent),
+            "PhoneScreenScheduled" => Ok(PositionStatus::PhoneScreenScheduled),
+            "TechnicalInterview" => Ok(PositionStatus::TechnicalInterview),
+            "OfferReceived" => Ok(PositionStatus::OfferReceived),
+            "Rejected" => Ok(PositionStatus::Rejected),
+            "Withdrawn" => Ok(PositionStatus::Withdrawn),
+            _ => Err(PositionValueError::InvalidStatus(s.to_string())),
+        }
+    }
+}
+
+impl std::fmt::Display for PositionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            PositionStatus::CvSent => "CvSent",
+            PositionStatus::PhoneScreenScheduled => "PhoneScreenScheduled",
+            PositionStatus::TechnicalInterview => "TechnicalInterview",
+            PositionStatus::OfferReceived => "OfferReceived",
+            PositionStatus::Rejected => "Rejected",
+            PositionStatus::Withdrawn => "Withdrawn",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub id: PositionUuid,
@@ -201,8 +235,9 @@ impl PositionBuilder {
         Ok(self)
     }
 
-    pub fn with_user_uuid(mut self, uuid: &str) -> Result<Self, UserValueError> {
-        self.user_id = UserUuid::from_str(uuid)?;
+    pub fn with_user_uuid(mut self, uuid: &str) -> Result<Self, PositionValueError> {
+        self.user_id = UserUuid::from_str(uuid)
+            .map_err(|e| PositionValueError::InvalidUserUuid(e.to_string()))?;
         Ok(self)
     }
 
@@ -224,6 +259,11 @@ impl PositionBuilder {
     pub fn with_applied_on(mut self, applied_on: &str) -> Result<Self, PositionValueError> {
         self.applied_on = AppliedOn::new(applied_on)?;
         Ok(self)
+    }
+
+    pub fn with_applied_on_date(mut self, date: NaiveDate) -> Self {
+        self.applied_on = AppliedOn::from_date(date);
+        self
     }
 
     pub fn with_url(mut self, url: &str) -> Self {
@@ -256,6 +296,11 @@ impl PositionBuilder {
         self
     }
 
+    pub fn with_optional_deleted_at(mut self, deleted_at: Option<DateTime<Local>>) -> Self {
+        self.deleted_at = deleted_at;
+        self
+    }
+
     pub fn build(self) -> Position {
         Position {
             id: self.id,
@@ -267,9 +312,9 @@ impl PositionBuilder {
             url: self.url,
             initial_comment: self.initial_comment,
             status: self.status,
-            created_at: Local::now(),
-            updated_at: Local::now(),
-            deleted_at: None,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            deleted_at: self.deleted_at,
         }
     }
 }

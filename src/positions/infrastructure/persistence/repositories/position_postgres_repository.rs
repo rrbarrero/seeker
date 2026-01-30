@@ -1,13 +1,32 @@
+use std::str::FromStr;
+
 use async_trait::async_trait;
+use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use sqlx::postgres::PgPool;
+use uuid::Uuid;
 
 use crate::positions::domain::{
     entities::{
-        position::{Position, PositionUuid},
-        position_error::PositionRepositoryError,
+        position::{Position, PositionBuilder, PositionStatus, PositionUuid},
+        position_error::{PositionRepositoryError, PositionValueError},
     },
     repositories::position_repository::IPositionRepository,
 };
+
+struct PositionRow {
+    id: Uuid,
+    user_id: Uuid,
+    company: String,
+    role_title: String,
+    description: String,
+    applied_on: NaiveDate,
+    url: String,
+    initial_comment: String,
+    status: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+    deleted_at: Option<NaiveDateTime>,
+}
 
 pub struct PositionPostgresRepository {
     pool: PgPool,
@@ -16,6 +35,31 @@ pub struct PositionPostgresRepository {
 impl PositionPostgresRepository {
     pub async fn new(pool: PgPool) -> Self {
         Self { pool }
+    }
+
+    fn from_row(row: PositionRow) -> Result<Position, PositionValueError> {
+        Ok(PositionBuilder::new()
+            .with_uuid(&row.id.to_string())?
+            .with_user_uuid(&row.user_id.to_string())
+            .unwrap()
+            .with_company(&row.company)
+            .with_role_title(&row.role_title)
+            .with_description(&row.description)
+            .with_applied_on_date(row.applied_on)
+            .with_url(&row.url)
+            .with_initial_comment(&row.initial_comment)
+            .with_status(PositionStatus::from_str(&row.status).unwrap())
+            .with_created_at(DateTime::<Local>::from(
+                Utc.from_utc_datetime(&row.created_at),
+            ))
+            .with_updated_at(DateTime::<Local>::from(
+                Utc.from_utc_datetime(&row.updated_at),
+            ))
+            .with_optional_deleted_at(
+                row.deleted_at
+                    .map(|d| DateTime::<Local>::from(Utc.from_utc_datetime(&d))),
+            )
+            .build())
     }
 }
 
@@ -29,10 +73,10 @@ impl IPositionRepository for PositionPostgresRepository {
             position.company.value(),
             position.role_title.value(),
             position.description.value(),
-            chrono::NaiveDate::parse_from_str(&position.applied_on.value(), "%Y-%m-%d").unwrap(), // Assuming value() returns string YYYY-MM-DD
+            chrono::NaiveDate::parse_from_str(&position.applied_on.value(), "%Y-%m-%d").unwrap(),
             position.url.value(),
             position.initial_comment.value(),
-            format!("{:?}", position.status), // Storing enum as string
+            format!("{:?}", position.status),
             position.created_at.naive_utc(),
             position.updated_at.naive_utc(),
             position.deleted_at.map(|d| d.naive_utc()),
@@ -44,7 +88,22 @@ impl IPositionRepository for PositionPostgresRepository {
     }
 
     async fn get(&self, _position_id: PositionUuid) -> Option<Position> {
-        todo!()
+        let result = sqlx::query_as!(
+            PositionRow,
+            "SELECT * FROM positions WHERE id = $1",
+            _position_id.value()
+        )
+        .fetch_optional(&self.pool)
+        .await;
+
+        match result {
+            Ok(Some(row)) => Self::from_row(row).ok(),
+            Ok(None) => None,
+            Err(e) => {
+                eprintln!("Database error in get: {:?}", e);
+                None
+            }
+        }
     }
 
     async fn get_all(&self) -> Vec<Position> {
@@ -77,9 +136,36 @@ mod tests {
         position.id = PositionUuid::new();
         position.user_id = user.id;
 
+        factory.created_positions.push(position.id.value());
         let result = repository.save(position).await;
 
-        assert!(result.is_ok());
+        result.expect("Should save position");
+
+        factory.teardown().await;
+    }
+
+    #[tokio::test]
+    async fn test_get_position_postgres_repository() {
+        let mut factory = TestFactory::new().await;
+
+        let user = factory.create_random_user().await;
+
+        let pool = factory.pool.clone();
+        let mut repository = PositionPostgresRepository::new(pool).await;
+
+        let mut position = create_fixture_position();
+
+        position.id = PositionUuid::new();
+        position.user_id = user.id;
+
+        factory.created_positions.push(position.id.value());
+        let result = repository.save(position).await;
+
+        let position_id = result.expect("Should save position");
+
+        let result = repository.get(position_id).await;
+
+        assert!(result.is_some());
 
         factory.teardown().await;
     }
