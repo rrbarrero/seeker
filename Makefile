@@ -5,8 +5,7 @@ test:
 
 prepare:
 	set -a && . ./.env && set +a && \
-	export DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@$${POSTGRES_HOST}:$${POSTGRES_PORT}/$${POSTGRES_DB}" && \
-	cargo sqlx prepare
+	docker compose run --rm -e DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}" test cargo sqlx prepare
 
 build:
 	docker compose build

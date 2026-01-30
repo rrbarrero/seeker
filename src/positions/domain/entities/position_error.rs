@@ -10,4 +10,7 @@ pub enum PositionValueError {
 }
 
 #[derive(Error, Debug)]
-pub enum PositionRepositoryError {}
+pub enum PositionRepositoryError {
+    #[error("Database error: `{0}`")]
+    DatabaseError(#[from] sqlx::Error),
+}

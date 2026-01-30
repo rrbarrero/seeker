@@ -6,6 +6,9 @@ WORKDIR /usr/src/app
 # Install build dependencies
 RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
+# Install sqlx-cli
+RUN cargo install sqlx-cli --no-default-features --features postgres
+
 # Copy the source code
 COPY . .
 
