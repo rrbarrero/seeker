@@ -62,3 +62,8 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run lint (DDD Fitness Test)
+        run: |
+          chmod +x scripts/ddd-fitness-test.sh
+          ./scripts/ddd-fitness-test.sh
