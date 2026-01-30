@@ -11,15 +11,13 @@ EXIT_CODE=0
 
 echo "🔍 Running DDD Fitness Test..."
 
+# Rule 1: Bounded Context Isolation
 for BC in $BCS; do
     if [ ! -d "src/$BC" ]; then continue; fi
     
-    # Define other BCs that should NOT be imported
     OTHER_BCS=$(ls src | grep -vE "^($BC|shared|main.rs|lib.rs)$")
     
     for OTHER in $OTHER_BCS; do
-        # Search for 'use crate::{OTHER}' in 'src/{BC}'
-        # We use -r (recursive), -n (line number), -I (ignore binary)
         VIOLATIONS=$(grep -rn "use crate::$OTHER" "src/$BC" || true)
         
         if [ ! -z "$VIOLATIONS" ]; then
@@ -29,12 +27,25 @@ for BC in $BCS; do
             EXIT_CODE=1
         fi
     done
+
+    # Rule 2: Domain Layer is the Core (cannot import from outer layers)
+    if [ -d "src/$BC/domain" ]; then
+        # Within src/BC/domain, we check for imports from application, infrastructure, or presentation
+        LAYER_VIOLATIONS=$(grep -rnE "use crate::$BC::(application|infrastructure|presentation)" "src/$BC/domain" || true)
+        
+        if [ ! -z "$LAYER_VIOLATIONS" ]; then
+            echo "❌ DDD VIOLATION: Domain layer in '$BC' depends on outer layers!"
+            echo "   Files found:"
+            echo "$LAYER_VIOLATIONS" | sed 's/^/   /'
+            EXIT_CODE=1
+        fi
+    fi
 done
 
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ DDD Fitness Test passed! Bounded contexts are isolated."
+    echo "✅ DDD Fitness Test passed! Bounded contexts and domain layers are isolated."
 else
-    echo "❌ DDD Fitness Test failed! Please use interfaces or shared services for cross-BC communication."
+    echo "❌ DDD Fitness Test failed! Please check architectural boundaries."
 fi
 
 exit $EXIT_CODE
