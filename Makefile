@@ -13,5 +13,8 @@ build:
 format:
 	docker compose run --rm test cargo fmt
 
+lint:
+	docker compose run --rm test /bin/bash -c "chmod +x scripts/ddd-fitness-test.sh && ./scripts/ddd-fitness-test.sh"
+
 check:
-	docker compose run --rm test /bin/bash -c "cargo check && cargo clippy --all-targets --all-features -- -D warnings && cargo test -- --test-threads=6"
+	docker compose run --rm test /bin/bash -c "cargo check && cargo clippy --all-targets --all-features -- -D warnings && chmod +x scripts/ddd-fitness-test.sh && ./scripts/ddd-fitness-test.sh && cargo test -- --test-threads=6"
