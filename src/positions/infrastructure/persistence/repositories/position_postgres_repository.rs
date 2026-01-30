@@ -40,15 +40,14 @@ impl PositionPostgresRepository {
     fn from_row(row: PositionRow) -> Result<Position, PositionValueError> {
         Ok(PositionBuilder::new()
             .with_uuid(&row.id.to_string())?
-            .with_user_uuid(&row.user_id.to_string())
-            .unwrap()
+            .with_user_uuid(&row.user_id.to_string())?
             .with_company(&row.company)
             .with_role_title(&row.role_title)
             .with_description(&row.description)
             .with_applied_on_date(row.applied_on)
             .with_url(&row.url)
             .with_initial_comment(&row.initial_comment)
-            .with_status(PositionStatus::from_str(&row.status).unwrap())
+            .with_status(PositionStatus::from_str(&row.status)?)
             .with_created_at(DateTime::<Local>::from(
                 Utc.from_utc_datetime(&row.created_at),
             ))
@@ -107,7 +106,21 @@ impl IPositionRepository for PositionPostgresRepository {
     }
 
     async fn get_all(&self) -> Vec<Position> {
-        todo!()
+        let result = sqlx::query_as!(PositionRow, "SELECT * FROM positions")
+            .fetch_all(&self.pool)
+            .await;
+
+        match result {
+            Ok(rows) => rows
+                .into_iter()
+                .map(Self::from_row)
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap(),
+            Err(e) => {
+                eprintln!("Database error in get_all: {:?}", e);
+                vec![]
+            }
+        }
     }
 
     async fn remove(&mut self, _position_uuid: PositionUuid) {
@@ -146,6 +159,32 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_position_postgres_repository() {
+        let mut factory = TestFactory::new().await;
+
+        let user = factory.create_random_user().await;
+
+        let pool = factory.pool.clone();
+        let mut repository = PositionPostgresRepository::new(pool).await;
+
+        let mut position = create_fixture_position();
+
+        position.id = PositionUuid::new();
+        position.user_id = user.id;
+
+        factory.created_positions.push(position.id.value());
+        let result = repository.save(position).await;
+
+        let position_id = result.expect("Should save position");
+
+        let result = repository.get(position_id).await;
+
+        assert!(result.is_some());
+
+        factory.teardown().await;
+    }
+
+    #[tokio::test]
+    async fn test_get_all_position_postgres_repository() {
         let mut factory = TestFactory::new().await;
 
         let user = factory.create_random_user().await;
