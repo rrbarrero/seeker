@@ -2,10 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
-    shared::{
-        config::Config,
-        domain::{error::UserValueError, value_objects::UserUuid},
-    },
+    shared::domain::{error::UserValueError, value_objects::UserUuid},
 };
 
 pub struct UserPostgresRepository {
@@ -13,12 +10,8 @@ pub struct UserPostgresRepository {
 }
 
 impl UserPostgresRepository {
-    pub async fn new(config: &Config) -> Self {
-        Self {
-            pool: sqlx::postgres::PgPool::connect(&config.postgres_url)
-                .await
-                .unwrap(),
-        }
+    pub async fn new(pool: sqlx::postgres::PgPool) -> Self {
+        Self { pool }
     }
 }
 
@@ -58,6 +51,7 @@ mod tests {
     use crate::shared::{
         config::Config,
         db_sync,
+        factory::create_postgres_pool,
         fixtures::{TESTING_EMAIL, TESTING_PASSWORD, TESTING_UUID_1, TESTING_UUID_2},
     };
 
@@ -85,7 +79,9 @@ mod tests {
 
         delete_user(&config, TESTING_UUID_1).await;
 
-        let mut repository = UserPostgresRepository::new(&config).await;
+        let pool = create_postgres_pool(&config).await;
+
+        let mut repository = UserPostgresRepository::new(pool).await;
 
         let user = User::new(TESTING_UUID_1, TESTING_EMAIL, TESTING_PASSWORD)
             .expect("Failed to create user!");
@@ -107,7 +103,9 @@ mod tests {
         let config = Config::default();
         delete_user(&config, TESTING_UUID_2).await;
 
-        let mut repository = UserPostgresRepository::new(&config).await;
+        let pool = create_postgres_pool(&config).await;
+
+        let mut repository = UserPostgresRepository::new(pool).await;
 
         let user = User::new(TESTING_UUID_2, TESTING_EMAIL, TESTING_PASSWORD)
             .expect("Failed to create user!");

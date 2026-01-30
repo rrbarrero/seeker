@@ -1,15 +1,11 @@
-use crate::shared::config::Config;
+use sqlx::postgres::PgPool;
 
 pub struct PositionPostgresRepository {
-    pool: sqlx::postgres::PgPool,
+    pool: PgPool,
 }
 
 impl PositionPostgresRepository {
-    pub async fn new(config: &Config) -> Self {
-        Self {
-            pool: sqlx::postgres::PgPool::connect(&config.postgres_url)
-                .await
-                .unwrap(),
-        }
+    pub async fn new(pool: PgPool) -> Self {
+        Self { pool }
     }
 }
