@@ -15,5 +15,5 @@ format:
 
 check:
 	docker compose run --rm test cargo check 
-	docker compose run --rm test cargo clippy
+	docker compose run --rm test cargo clippy --all-targets --all-features -- -D warnings
 	docker compose run --rm test cargo test -- --test-threads=8

@@ -75,7 +75,7 @@ mod tests {
         let mut position = create_fixture_position();
 
         position.id = PositionUuid::new();
-        position.user_id = user.id.clone();
+        position.user_id = user.id;
 
         let result = repository.save(position).await;
 

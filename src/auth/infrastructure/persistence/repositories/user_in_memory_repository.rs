@@ -60,7 +60,7 @@ mod tests {
 
         let id = valid_id();
         let user = User::new(&id, valid_email(), valid_password())?;
-        let user_id_copy = user.id.clone();
+        let user_id_copy = user.id;
 
         let user_uuid = repo.save(&user).await?;
 

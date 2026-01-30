@@ -71,7 +71,7 @@ mod tests {
         let pool = factory.pool.clone();
         let repository = UserPostgresRepository::new(pool).await;
 
-        let result = repository.get(user.id.clone()).await;
+        let result = repository.get(user.id).await;
 
         assert!(result.is_some());
         assert_eq!(result.unwrap().id, user.id);
