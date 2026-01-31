@@ -11,6 +11,6 @@ use crate::positions::{
     application::position_service::PositionService, presentation::routes::position_routes,
 };
 
-pub fn build_router(service: Arc<PositionService>) -> Router<Arc<PositionService>> {
+pub fn build_router(service: Arc<PositionService>) -> Router {
     Router::new().nest("/positions", position_routes(service))
 }
