@@ -7,6 +7,6 @@ use crate::{
 
 #[async_trait]
 pub trait IUserRepository {
-    async fn get(&self, user_id: UserUuid) -> Option<User>;
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, UserValueError>;
     async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError>;
 }

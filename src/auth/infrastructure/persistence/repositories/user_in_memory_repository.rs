@@ -22,13 +22,14 @@ impl Default for UserInMemoryRepository {
 
 #[async_trait]
 impl IUserRepository for UserInMemoryRepository {
-    async fn get(&self, user_id: UserUuid) -> Option<User> {
-        self.users
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, UserValueError> {
+        Ok(self
+            .users
             .read()
             .await
             .iter()
             .find(|u| u.id == user_id)
-            .cloned()
+            .cloned())
     }
     async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError> {
         let user_id = user.id;
@@ -78,9 +79,23 @@ mod tests {
         let current_user = repo
             .get(user_uuid)
             .await
+            .expect("Should not error on get")
             .expect("Result user was expected at this point!");
 
         assert_eq!(current_user, user);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_repository_contract() -> Result<(), UserValueError> {
+        let repo = UserInMemoryRepository::default();
+        let user = User::new(&valid_id(), valid_email(), valid_password())?;
+
+        crate::auth::infrastructure::persistence::repositories::common_repository_tests::assert_user_repository_behavior(
+            Box::new(repo),
+            user,
+        )
+        .await;
         Ok(())
     }
 }
