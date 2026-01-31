@@ -66,7 +66,7 @@ impl PositionPostgresRepository {
 
 #[async_trait]
 impl IPositionRepository for PositionPostgresRepository {
-    async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
+    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
         sqlx::query!(
             "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
             position.id.value(),
@@ -123,10 +123,7 @@ impl IPositionRepository for PositionPostgresRepository {
         }
     }
 
-    async fn remove(
-        &mut self,
-        _position_uuid: PositionUuid,
-    ) -> Result<(), PositionRepositoryError> {
+    async fn remove(&self, _position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
         let result = sqlx::query!(
             "UPDATE positions SET deleted = true, deleted_at = NOW() WHERE id = $1",
             _position_uuid.value()
@@ -155,7 +152,7 @@ mod tests {
         let user = factory.create_random_user().await;
 
         let pool = factory.pool.clone();
-        let mut repository = PositionPostgresRepository::new(pool).await;
+        let repository = PositionPostgresRepository::new(pool).await;
 
         let mut position = create_fixture_position();
 
@@ -177,7 +174,7 @@ mod tests {
         let user = factory.create_random_user().await;
 
         let pool = factory.pool.clone();
-        let mut repository = PositionPostgresRepository::new(pool).await;
+        let repository = PositionPostgresRepository::new(pool).await;
 
         let mut position = create_fixture_position();
 
@@ -203,7 +200,7 @@ mod tests {
         let user = factory.create_random_user().await;
 
         let pool = factory.pool.clone();
-        let mut repository = PositionPostgresRepository::new(pool).await;
+        let repository = PositionPostgresRepository::new(pool).await;
 
         let mut position = create_fixture_position();
 
@@ -229,7 +226,7 @@ mod tests {
         let user = factory.create_random_user().await;
 
         let pool = factory.pool.clone();
-        let mut repository = PositionPostgresRepository::new(pool).await;
+        let repository = PositionPostgresRepository::new(pool).await;
 
         let mut position = create_fixture_position();
 

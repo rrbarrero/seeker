@@ -61,6 +61,12 @@ impl Company {
     }
 }
 
+impl std::fmt::Display for Company {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct RoleTitle {
     title: String,
@@ -78,6 +84,12 @@ impl RoleTitle {
     }
 }
 
+impl std::fmt::Display for RoleTitle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.title)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Description {
     description: String,
@@ -92,6 +104,12 @@ impl Description {
         Description {
             description: description.to_string(),
         }
+    }
+}
+
+impl std::fmt::Display for Description {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.description)
     }
 }
 
@@ -114,6 +132,12 @@ impl AppliedOn {
 
     pub fn from_date(date: NaiveDate) -> Self {
         Self { applied_on: date }
+    }
+}
+
+impl std::fmt::Display for AppliedOn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.applied_on)
     }
 }
 
@@ -143,6 +167,12 @@ impl Url {
     }
 }
 
+impl std::fmt::Display for Url {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.url)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct InitialComment {
     initial_comment: String,
@@ -157,6 +187,12 @@ impl InitialComment {
         InitialComment {
             initial_comment: comment.to_string(),
         }
+    }
+}
+
+impl std::fmt::Display for InitialComment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.initial_comment)
     }
 }
 

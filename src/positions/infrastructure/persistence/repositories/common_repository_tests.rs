@@ -2,10 +2,7 @@ use crate::positions::domain::entities::position::{Position, PositionUuid};
 use crate::positions::domain::repositories::position_repository::IPositionRepository;
 
 #[cfg(test)]
-pub async fn assert_repository_behavior(
-    mut repo: Box<dyn IPositionRepository>,
-    position: Position,
-) {
+pub async fn assert_repository_behavior(repo: Box<dyn IPositionRepository>, position: Position) {
     let position_id = position.id;
 
     // 1. Test save and get

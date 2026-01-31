@@ -28,3 +28,9 @@ pub enum PositionRepositoryError {
     #[error("Position not found: `{0}`")]
     NotFound(PositionUuid),
 }
+
+#[derive(Error, Debug)]
+pub enum PositionServiceError {
+    #[error("Repository error: `{0}`")]
+    RepositoryError(#[from] PositionRepositoryError),
+}

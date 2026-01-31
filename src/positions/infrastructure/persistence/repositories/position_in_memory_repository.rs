@@ -41,7 +41,7 @@ impl IPositionRepository for PositionInMemoryRepository {
         Ok(self.positions.read().await.clone())
     }
 
-    async fn remove(&mut self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
+    async fn remove(&self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
         if let Some(position) = self
             .positions
             .write()
@@ -55,7 +55,7 @@ impl IPositionRepository for PositionInMemoryRepository {
         Ok(())
     }
 
-    async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
+    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
         let uuid = position.id;
         self.positions.write().await.push(position);
         Ok(uuid)
@@ -74,7 +74,7 @@ mod tests {
     async fn create_positions_repo_for_testing(
         position: Option<Position>,
     ) -> PositionInMemoryRepository {
-        let mut repo = PositionInMemoryRepository::default();
+        let repo = PositionInMemoryRepository::default();
 
         if let Some(p) = position {
             let _ = repo.save(p).await;
@@ -98,7 +98,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_save_position() {
-        let mut repo = create_positions_repo_for_testing(None).await;
+        let repo = create_positions_repo_for_testing(None).await;
         let position = create_fixture_position();
         let expected_id = position.id;
 
@@ -122,7 +122,7 @@ mod tests {
         let mut handles = vec![];
 
         for i in 0..num_tasks {
-            let mut repo_clone = repo.clone();
+            let repo_clone = repo.clone();
 
             let handle = tokio::spawn(async move {
                 let pos = PositionBuilder::new()
@@ -149,7 +149,7 @@ mod tests {
     #[tokio::test]
     async fn test_remove_position() {
         let position = create_fixture_position();
-        let mut repo = create_positions_repo_for_testing(Some(position.clone())).await;
+        let repo = create_positions_repo_for_testing(Some(position.clone())).await;
 
         let _ = repo.remove(position.id).await;
 
@@ -172,7 +172,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_remove_position_not_found() {
-        let mut repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
+        let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::new();
         let _ = repo.remove(position_id).await;
