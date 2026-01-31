@@ -7,8 +7,11 @@ use crate::positions::domain::entities::{
 
 #[async_trait]
 pub trait IPositionRepository {
-    async fn get_all(&self) -> Vec<Position>;
-    async fn get(&self, position_id: PositionUuid) -> Option<Position>;
+    async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError>;
+    async fn get(
+        &self,
+        position_id: PositionUuid,
+    ) -> Result<Option<Position>, PositionRepositoryError>;
     async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError>;
-    async fn remove(&mut self, position_uuid: PositionUuid);
+    async fn remove(&mut self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError>;
 }

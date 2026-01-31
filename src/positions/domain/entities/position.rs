@@ -8,7 +8,7 @@ use crate::{
     shared::domain::value_objects::UserUuid,
 };
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 pub struct PositionUuid {
     id: Uuid,
 }
@@ -35,6 +35,12 @@ impl FromStr for PositionUuid {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id = Uuid::parse_str(s)?;
         Ok(PositionUuid { id })
+    }
+}
+
+impl std::fmt::Display for PositionUuid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
     }
 }
 
@@ -209,6 +215,12 @@ pub struct Position {
     pub updated_at: DateTime<Local>,
     pub deleted_at: Option<DateTime<Local>>,
     pub deleted: bool,
+}
+
+impl Position {
+    pub fn is_deleted(&self) -> bool {
+        self.deleted
+    }
 }
 
 pub struct PositionBuilder {

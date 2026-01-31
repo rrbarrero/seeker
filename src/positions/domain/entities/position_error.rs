@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::positions::domain::entities::position::PositionUuid;
+
 #[derive(Error, Debug)]
 pub enum PositionValueError {
     #[error("Wrong uuid format: `{0}`")]
@@ -19,4 +21,10 @@ pub enum PositionValueError {
 pub enum PositionRepositoryError {
     #[error("Database error: `{0}`")]
     DatabaseError(#[from] sqlx::Error),
+
+    #[error("Error converting from database: `{0}`")]
+    ConversionError(#[from] PositionValueError),
+
+    #[error("Position not found: `{0}`")]
+    NotFound(PositionUuid),
 }

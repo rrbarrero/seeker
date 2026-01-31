@@ -24,25 +24,44 @@ impl Default for PositionInMemoryRepository {
 
 #[async_trait]
 impl IPositionRepository for PositionInMemoryRepository {
-    async fn get(&self, position_id: PositionUuid) -> Option<Position> {
+    async fn get(
+        &self,
+        position_id: PositionUuid,
+    ) -> Result<Option<Position>, PositionRepositoryError> {
         self.positions
             .read()
             .await
             .iter()
             .find(|&p| p.id == position_id)
             .cloned()
+            .ok_or(PositionRepositoryError::NotFound(position_id))
+            .map(Some)
     }
-    async fn get_all(&self) -> Vec<Position> {
-        self.positions.read().await.clone()
+
+    async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError> {
+        Ok(self.positions.read().await.clone())
     }
-    async fn remove(&mut self, position_uuid: PositionUuid) {
-        self.positions
+
+    async fn remove(&mut self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
+        let position = self.get(position_uuid).await?;
+        if position.is_none() {
+            return Err(PositionRepositoryError::NotFound(position_uuid));
+        }
+        if let Some(p) = self
+            .positions
             .write()
             .await
-            .retain(|p| p.id != position_uuid);
+            .iter_mut()
+            .find(|p| p.id == position_uuid)
+            .map(|p| p.deleted = true)
+        {
+            return Ok(p);
+        }
+        Ok(())
     }
+
     async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
-        let uuid = position.id.clone();
+        let uuid = position.id;
         self.positions.write().await.push(position);
         Ok(uuid)
     }
@@ -74,22 +93,28 @@ mod tests {
         let expected_position = create_fixture_position();
         let repo = create_positions_repo_for_testing(Some(expected_position.clone())).await;
 
-        let position = repo.get(expected_position.id.clone()).await.unwrap();
+        let position = repo.get(expected_position.id).await.unwrap();
 
-        assert_eq!(position, expected_position);
+        assert_eq!(position, Some(expected_position));
     }
 
     #[tokio::test]
     async fn test_save_position() {
         let mut repo = create_positions_repo_for_testing(None).await;
         let position = create_fixture_position();
-        let expected_id = position.id.clone();
+        let expected_id = position.id;
 
         let position_uuid = repo.save(position).await;
 
-        assert_eq!(position_uuid.unwrap(), expected_id);
+        assert_eq!(position_uuid.expect("Error saving position"), expected_id);
 
-        assert_eq!(repo.get_all().await.len(), 1);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            1
+        );
     }
 
     #[tokio::test]
@@ -105,16 +130,22 @@ mod tests {
                 let pos = PositionBuilder::new()
                     .with_role_title(&format!("Role {}", i))
                     .build();
-                repo_clone.save(pos).await.unwrap();
+                repo_clone.save(pos).await.expect("Error saving position");
             });
             handles.push(handle);
         }
 
         for handle in handles {
-            handle.await.unwrap();
+            handle.await.expect("Error joining handle");
         }
 
-        assert_eq!(repo.get_all().await.len(), num_tasks);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            num_tasks
+        );
     }
 
     #[tokio::test]
@@ -124,7 +155,21 @@ mod tests {
 
         let _ = repo.remove(position.id).await;
 
-        assert_eq!(repo.get_all().await.len(), 0);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            1
+        );
+
+        assert!(
+            repo.get(position.id)
+                .await
+                .expect("Should be Ok")
+                .expect("Should be a position")
+                .is_deleted()
+        );
     }
 
     #[tokio::test]
@@ -134,21 +179,39 @@ mod tests {
         let position_id = PositionUuid::new();
         let _ = repo.remove(position_id).await;
 
-        assert_eq!(repo.get_all().await.len(), 1);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            1
+        );
     }
 
     #[tokio::test]
     async fn test_get_all_positions() {
         let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
-        assert_eq!(repo.get_all().await.len(), 1);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            1
+        );
     }
 
     #[tokio::test]
     async fn test_get_all_positions_empty() {
         let repo = create_positions_repo_for_testing(None).await;
 
-        assert_eq!(repo.get_all().await.len(), 0);
+        assert_eq!(
+            repo.get_all()
+                .await
+                .expect("Error getting all positions")
+                .len(),
+            0
+        );
     }
 
     #[tokio::test]
@@ -158,6 +221,6 @@ mod tests {
         let position_id = PositionUuid::new();
         let position = repo.get(position_id).await;
 
-        assert_eq!(position, None);
+        assert!(position.is_err());
     }
 }

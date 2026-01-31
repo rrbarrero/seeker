@@ -89,7 +89,10 @@ impl IPositionRepository for PositionPostgresRepository {
         Ok(position.id)
     }
 
-    async fn get(&self, _position_id: PositionUuid) -> Option<Position> {
+    async fn get(
+        &self,
+        _position_id: PositionUuid,
+    ) -> Result<Option<Position>, PositionRepositoryError> {
         let result = sqlx::query_as!(
             PositionRow,
             "SELECT * FROM positions WHERE id = $1",
@@ -99,16 +102,13 @@ impl IPositionRepository for PositionPostgresRepository {
         .await;
 
         match result {
-            Ok(Some(row)) => Self::from_row(row).ok(),
-            Ok(None) => None,
-            Err(e) => {
-                eprintln!("Database error in get: {:?}", e);
-                None
-            }
+            Ok(Some(row)) => Self::from_row(row).map(Some).map_err(Into::into),
+            Ok(None) => Ok(None),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
         }
     }
 
-    async fn get_all(&self) -> Vec<Position> {
+    async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError> {
         let result = sqlx::query_as!(PositionRow, "SELECT * FROM positions")
             .fetch_all(&self.pool)
             .await;
@@ -118,21 +118,26 @@ impl IPositionRepository for PositionPostgresRepository {
                 .into_iter()
                 .map(Self::from_row)
                 .collect::<Result<Vec<_>, _>>()
-                .unwrap(),
-            Err(e) => {
-                eprintln!("Database error in get_all: {:?}", e);
-                vec![]
-            }
+                .map_err(Into::into),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
         }
     }
 
-    async fn remove(&mut self, _position_uuid: PositionUuid) {
-        let _ = sqlx::query!(
+    async fn remove(
+        &mut self,
+        _position_uuid: PositionUuid,
+    ) -> Result<(), PositionRepositoryError> {
+        let result = sqlx::query!(
             "UPDATE positions SET deleted = true, deleted_at = NOW() WHERE id = $1",
             _position_uuid.value()
         )
         .execute(&self.pool)
         .await;
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
+        }
     }
 }
 
@@ -186,7 +191,7 @@ mod tests {
 
         let result = repository.get(position_id).await;
 
-        assert!(result.is_some());
+        assert!(result.is_ok());
 
         factory.teardown().await;
     }
@@ -212,7 +217,7 @@ mod tests {
 
         let result = repository.get(position_id).await;
 
-        assert!(result.is_some());
+        assert!(result.is_ok());
 
         factory.teardown().await;
     }
@@ -236,12 +241,17 @@ mod tests {
 
         let position_id = result.expect("Should save position");
 
-        let _ = repository.remove(position_id.clone()).await;
+        let _ = repository.remove(position_id).await;
 
         let result = repository.get(position_id).await;
 
-        assert!(result.is_some());
-        assert!(result.unwrap().deleted);
+        assert!(result.is_ok());
+        assert!(
+            result
+                .expect("The Result should be Ok")
+                .expect("The Position should not be None")
+                .is_deleted()
+        );
 
         factory.teardown().await;
     }
