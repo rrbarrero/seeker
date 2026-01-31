@@ -28,14 +28,13 @@ impl IPositionRepository for PositionInMemoryRepository {
         &self,
         position_id: PositionUuid,
     ) -> Result<Option<Position>, PositionRepositoryError> {
-        self.positions
+        Ok(self
+            .positions
             .read()
             .await
             .iter()
             .find(|&p| p.id == position_id)
-            .cloned()
-            .ok_or(PositionRepositoryError::NotFound(position_id))
-            .map(Some)
+            .cloned())
     }
 
     async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError> {
@@ -43,19 +42,15 @@ impl IPositionRepository for PositionInMemoryRepository {
     }
 
     async fn remove(&mut self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
-        let position = self.get(position_uuid).await?;
-        if position.is_none() {
-            return Err(PositionRepositoryError::NotFound(position_uuid));
-        }
-        if let Some(p) = self
+        if let Some(position) = self
             .positions
             .write()
             .await
             .iter_mut()
             .find(|p| p.id == position_uuid)
-            .map(|p| p.deleted = true)
         {
-            return Ok(p);
+            position.deleted = true;
+            position.deleted_at = Some(chrono::Local::now());
         }
         Ok(())
     }
@@ -222,8 +217,20 @@ mod tests {
         let repo = create_positions_repo_for_testing(Some(create_fixture_position())).await;
 
         let position_id = PositionUuid::new();
-        let position = repo.get(position_id).await;
+        let position = repo.get(position_id).await.unwrap();
 
-        assert!(position.is_err());
+        assert_eq!(position, None);
+    }
+
+    #[tokio::test]
+    async fn test_repository_contract() {
+        let repo = PositionInMemoryRepository::default();
+        let position = create_fixture_position();
+
+        crate::positions::infrastructure::persistence::repositories::common_repository_tests::assert_repository_behavior(
+            Box::new(repo),
+            position,
+        )
+        .await;
     }
 }

@@ -255,4 +255,23 @@ mod tests {
 
         factory.teardown().await;
     }
+
+    #[tokio::test]
+    async fn test_repository_contract() {
+        let mut factory = TestFactory::new().await;
+        let user = factory.create_random_user().await;
+        let pool = factory.pool.clone();
+        let repository = PositionPostgresRepository::new(pool).await;
+
+        let mut position = create_fixture_position();
+        position.user_id = user.id;
+
+        crate::positions::infrastructure::persistence::repositories::common_repository_tests::assert_repository_behavior(
+            Box::new(repository),
+            position,
+        )
+        .await;
+
+        factory.teardown().await;
+    }
 }
