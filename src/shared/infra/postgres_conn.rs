@@ -11,14 +11,14 @@ pub async fn get_or_create_pool(config: &Config) -> PgPool {
             .acquire_timeout(std::time::Duration::from_secs(30))
             .connect(&config.postgres_url)
             .await
-            .unwrap();
+            .expect("Should create pool");
     }
 
     POOL.get_or_init(|| async {
         PgPoolOptions::new()
             .connect(&config.postgres_url)
             .await
-            .unwrap()
+            .expect("Should create pool")
     })
     .await
     .clone()

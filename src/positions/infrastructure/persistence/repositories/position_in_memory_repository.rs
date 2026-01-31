@@ -93,7 +93,10 @@ mod tests {
         let expected_position = create_fixture_position();
         let repo = create_positions_repo_for_testing(Some(expected_position.clone())).await;
 
-        let position = repo.get(expected_position.id).await.unwrap();
+        let position = repo
+            .get(expected_position.id)
+            .await
+            .expect("Should get position");
 
         assert_eq!(position, Some(expected_position));
     }

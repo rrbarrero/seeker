@@ -23,8 +23,14 @@ impl IUserRepository for UserPostgresRepository {
             user.id.value(),
             user.email.value(),
             user.password().value(),
-            user.created.and_hms_opt(0, 0, 0).unwrap().and_utc(),
-            user.updated.and_hms_opt(0, 0, 0).unwrap().and_utc(),
+            user.created
+                .and_hms_opt(0, 0, 0)
+                .expect("Created date should be valid")
+                .and_utc(),
+            user.updated
+                .and_hms_opt(0, 0, 0)
+                .expect("Updated date should be valid")
+                .and_utc(),
         )
         .execute(&self.pool)
         .await?;
@@ -74,7 +80,7 @@ mod tests {
         let result = repository.get(user.id).await;
 
         assert!(result.is_some());
-        assert_eq!(result.unwrap().id, user.id);
+        assert_eq!(result.expect("Should get user").id, user.id);
 
         factory.teardown().await;
     }
