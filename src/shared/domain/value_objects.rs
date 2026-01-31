@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use uuid::Uuid;
 
@@ -31,5 +31,11 @@ impl FromStr for UserUuid {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id = Uuid::parse_str(s)?;
         Ok(UserUuid { id })
+    }
+}
+
+impl Display for UserUuid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
     }
 }
