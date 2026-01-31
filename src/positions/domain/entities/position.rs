@@ -208,6 +208,7 @@ pub struct Position {
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
     pub deleted_at: Option<DateTime<Local>>,
+    pub deleted: bool,
 }
 
 pub struct PositionBuilder {
@@ -223,6 +224,7 @@ pub struct PositionBuilder {
     created_at: DateTime<Local>,
     updated_at: DateTime<Local>,
     deleted_at: Option<DateTime<Local>>,
+    deleted: bool,
 }
 
 impl PositionBuilder {
@@ -301,6 +303,11 @@ impl PositionBuilder {
         self
     }
 
+    pub fn with_deleted(mut self, deleted: bool) -> Self {
+        self.deleted = deleted;
+        self
+    }
+
     pub fn build(self) -> Position {
         Position {
             id: self.id,
@@ -315,6 +322,7 @@ impl PositionBuilder {
             created_at: self.created_at,
             updated_at: self.updated_at,
             deleted_at: self.deleted_at,
+            deleted: self.deleted,
         }
     }
 }
@@ -334,6 +342,7 @@ impl Default for PositionBuilder {
             created_at: Local::now(),
             updated_at: Local::now(),
             deleted_at: None,
+            deleted: false,
         }
     }
 }

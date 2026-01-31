@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE positions SET deleted = true, deleted_at = NOW() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf07bacd0b05c575aa36ed2f56d8559c749852481fcbfbc0d1f9786744bff36d"
+}

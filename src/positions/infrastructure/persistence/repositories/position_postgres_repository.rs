@@ -26,6 +26,7 @@ struct PositionRow {
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
     deleted_at: Option<NaiveDateTime>,
+    deleted: bool,
 }
 
 pub struct PositionPostgresRepository {
@@ -58,6 +59,7 @@ impl PositionPostgresRepository {
                 row.deleted_at
                     .map(|d| DateTime::<Local>::from(Utc.from_utc_datetime(&d))),
             )
+            .with_deleted(row.deleted)
             .build())
     }
 }
@@ -66,7 +68,7 @@ impl PositionPostgresRepository {
 impl IPositionRepository for PositionPostgresRepository {
     async fn save(&mut self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
         sqlx::query!(
-            "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+            "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
             position.id.value(),
             position.user_id.value(),
             position.company.value(),
@@ -79,6 +81,7 @@ impl IPositionRepository for PositionPostgresRepository {
             position.created_at.naive_utc(),
             position.updated_at.naive_utc(),
             position.deleted_at.map(|d| d.naive_utc()),
+            position.deleted,
         )
         .execute(&self.pool)
         .await?;
@@ -125,7 +128,7 @@ impl IPositionRepository for PositionPostgresRepository {
 
     async fn remove(&mut self, _position_uuid: PositionUuid) {
         let _ = sqlx::query!(
-            "DELETE FROM positions WHERE id = $1",
+            "UPDATE positions SET deleted = true, deleted_at = NOW() WHERE id = $1",
             _position_uuid.value()
         )
         .execute(&self.pool)
@@ -237,7 +240,8 @@ mod tests {
 
         let result = repository.get(position_id).await;
 
-        assert!(result.is_none());
+        assert!(result.is_some());
+        assert!(result.unwrap().deleted);
 
         factory.teardown().await;
     }
