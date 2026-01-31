@@ -43,9 +43,7 @@ impl IUserRepository for UserPostgresRepository {
             .await;
 
         match result {
-            Ok(Some(row)) => User::new(&row.id.to_string(), &row.email, &row.password)
-                .map(Some)
-                .map_err(Into::into),
+            Ok(Some(row)) => User::new(&row.id.to_string(), &row.email, &row.password).map(Some),
             Ok(None) => Ok(None),
             Err(e) => Err(UserValueError::DatabaseError(e)),
         }
