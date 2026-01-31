@@ -4,8 +4,12 @@ use axum::{
 };
 use thiserror::Error;
 
-use crate::positions::domain::entities::position::PositionUuid;
-use crate::positions::domain::entities::position_error::PositionServiceError;
+use crate::positions::domain::entities::position_error::{
+    PositionServiceError, PositionValueError,
+};
+use crate::{
+    positions::domain::entities::position::PositionUuid, shared::domain::error::UserValueError,
+};
 
 #[derive(Error, Debug)]
 pub enum PositionPresentationError {
@@ -14,6 +18,12 @@ pub enum PositionPresentationError {
 
     #[error("Position not found: `{0}`")]
     PositionNotFound(PositionUuid),
+
+    #[error("Invalid user uuid: `{0}`")]
+    UserValueError(#[from] UserValueError),
+
+    #[error("Invalid position value: `{0}`")]
+    PositionValueError(#[from] PositionValueError),
 }
 
 impl IntoResponse for PositionPresentationError {
@@ -24,6 +34,12 @@ impl IntoResponse for PositionPresentationError {
             }
             PositionPresentationError::PositionNotFound(position_uuid) => {
                 (StatusCode::NOT_FOUND, position_uuid.to_string()).into_response()
+            }
+            PositionPresentationError::UserValueError(user_uuid) => {
+                (StatusCode::BAD_REQUEST, user_uuid.to_string()).into_response()
+            }
+            PositionPresentationError::PositionValueError(position_uuid) => {
+                (StatusCode::BAD_REQUEST, position_uuid.to_string()).into_response()
             }
         }
     }

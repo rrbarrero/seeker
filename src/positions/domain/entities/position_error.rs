@@ -1,7 +1,3 @@
-use axum::{
-    http::{Response, StatusCode},
-    response::IntoResponse,
-};
 use thiserror::Error;
 
 use crate::positions::domain::entities::position::PositionUuid;

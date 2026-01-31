@@ -1,9 +1,20 @@
 use std::str::FromStr;
 
-use crate::positions::domain::entities::position::{Position, PositionUuid};
+use serde::Deserialize;
+
+use crate::{
+    positions::{
+        domain::entities::position::{
+            AppliedOn, Company, Description, InitialComment, Position, PositionStatus,
+            PositionUuid, RoleTitle, Url,
+        },
+        presentation::errors::PositionPresentationError,
+    },
+    shared::domain::value_objects::UserUuid,
+};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PositionDto {
+pub struct PositionResponseDto {
     pub id: String,
     pub user_id: String,
     pub company: String,
@@ -19,7 +30,7 @@ pub struct PositionDto {
     pub deleted: bool,
 }
 
-impl From<&Position> for PositionDto {
+impl From<&Position> for PositionResponseDto {
     fn from(position: &Position) -> Self {
         Self {
             id: position.id.to_string(),
@@ -44,8 +55,51 @@ pub struct PositionUuidDto {
     id: String,
 }
 
-impl Into<PositionUuid> for PositionUuidDto {
-    fn into(self) -> PositionUuid {
-        PositionUuid::from_str(&self.id).unwrap()
+impl TryFrom<PositionUuidDto> for PositionUuid {
+    type Error = PositionPresentationError;
+
+    fn try_from(val: PositionUuidDto) -> Result<Self, Self::Error> {
+        Ok(PositionUuid::from_str(&val.id)?)
+    }
+}
+
+impl From<PositionUuid> for PositionUuidDto {
+    fn from(val: PositionUuid) -> Self {
+        Self {
+            id: val.to_string(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SavePositionRequestDto {
+    pub user_id: String,
+    pub company: String,
+    pub role_title: String,
+    pub description: String,
+    pub applied_on: String,
+    pub url: String,
+    pub initial_comment: String,
+    pub status: String,
+}
+
+impl SavePositionRequestDto {
+    pub fn to_new_position(&self) -> Result<Position, PositionPresentationError> {
+        let position = Position {
+            id: PositionUuid::new(),
+            user_id: UserUuid::from_str(&self.user_id)?,
+            company: Company::new(&self.company),
+            role_title: RoleTitle::new(&self.role_title),
+            description: Description::new(&self.description),
+            applied_on: AppliedOn::new(&self.applied_on)?,
+            url: Url::new(&self.url),
+            initial_comment: InitialComment::new(&self.initial_comment),
+            status: PositionStatus::from_str(&self.status)?,
+            created_at: chrono::Local::now(),
+            updated_at: chrono::Local::now(),
+            deleted_at: None,
+            deleted: false,
+        };
+        Ok(position)
     }
 }

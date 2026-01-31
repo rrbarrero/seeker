@@ -16,6 +16,11 @@ impl TestFactory {
         let config = Config::default();
         let pool = get_or_create_postgres_pool(&config).await;
 
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("Failed to migrate database");
+
         Self {
             pool,
             created_users: Vec::new(),
