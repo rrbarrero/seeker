@@ -8,7 +8,7 @@ pub enum PositionValueError {
     InvalidUuid(#[from] uuid::Error),
 
     #[error("Wrong date format: `{0}`")]
-    InvalidDate(#[from] chrono::format::ParseError),
+    InvalidDate(String),
 
     #[error("Invalid status: `{0}`")]
     InvalidStatus(String),
@@ -20,7 +20,7 @@ pub enum PositionValueError {
 #[derive(Error, Debug)]
 pub enum PositionRepositoryError {
     #[error("Database error: `{0}`")]
-    DatabaseError(#[from] sqlx::Error),
+    DatabaseError(String),
 
     #[error("Error converting from database: `{0}`")]
     ConversionError(#[from] PositionValueError),

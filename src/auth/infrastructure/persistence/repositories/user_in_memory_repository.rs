@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
-    shared::domain::{error::UserValueError, value_objects::UserUuid},
+    shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
 };
 
 #[derive(Clone)]
@@ -22,7 +22,7 @@ impl Default for UserInMemoryRepository {
 
 #[async_trait]
 impl IUserRepository for UserInMemoryRepository {
-    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, UserValueError> {
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError> {
         Ok(self
             .users
             .read()
@@ -31,7 +31,7 @@ impl IUserRepository for UserInMemoryRepository {
             .find(|u| u.id == user_id)
             .cloned())
     }
-    async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError> {
+    async fn save(&mut self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
         let user_id = user.id;
         self.users.write().await.push(user.clone());
         Ok(user_id)
@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_user_save() -> Result<(), UserValueError> {
+    async fn test_user_save() -> Result<(), AuthRepositoryError> {
         let mut repo = UserInMemoryRepository::default();
 
         let id = valid_id();
@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_user() -> Result<(), UserValueError> {
+    async fn test_get_user() -> Result<(), AuthRepositoryError> {
         let mut repo = UserInMemoryRepository::default();
 
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_repository_contract() -> Result<(), UserValueError> {
+    async fn test_repository_contract() -> Result<(), AuthRepositoryError> {
         let repo = UserInMemoryRepository::default();
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
 

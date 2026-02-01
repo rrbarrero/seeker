@@ -5,7 +5,7 @@ use crate::{
         domain::{entities::user::User, repositories::user_repository::IUserRepository},
         infrastructure::persistence::repositories::dtos::UserDto,
     },
-    shared::domain::{error::UserValueError, value_objects::UserUuid},
+    shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
 };
 
 pub struct UserPostgresRepository {
@@ -20,7 +20,7 @@ impl UserPostgresRepository {
 
 #[async_trait]
 impl IUserRepository for UserPostgresRepository {
-    async fn save(&mut self, user: &User) -> Result<UserUuid, UserValueError> {
+    async fn save(&mut self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
         sqlx::query!(
             "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
             user.id.value(),
@@ -36,20 +36,24 @@ impl IUserRepository for UserPostgresRepository {
                 .and_utc(),
         )
         .execute(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| AuthRepositoryError::DatabaseError(e.to_string()))?;
 
         Ok(user.id)
     }
-    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, UserValueError> {
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError> {
         let result = sqlx::query("SELECT * FROM users WHERE id = $1")
             .bind(user_id.value())
             .fetch_optional(&self.pool)
             .await;
 
         match result {
-            Ok(Some(row)) => UserDto::from_row(&row).to_domain().map(Some),
+            Ok(Some(row)) => UserDto::from_row(&row)
+                .to_domain()
+                .map(Some)
+                .map_err(AuthRepositoryError::from),
             Ok(None) => Ok(None),
-            Err(e) => Err(UserValueError::DatabaseError(e)),
+            Err(e) => Err(AuthRepositoryError::DatabaseError(e.to_string())),
         }
     }
 }

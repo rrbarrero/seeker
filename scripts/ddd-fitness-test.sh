@@ -49,29 +49,34 @@ done
 
 # 2. Layered Architecture: Domain Purity
 echo "Checking Domain Layer Purity..."
-for BC in $BCS; do
-    if [ -d "src/$BC/domain" ]; then
-        # Rule: Domain cannot depend on Application, Infra, or Presentation
+ALL_DOMAINS=$(find src -type d -name "domain")
+for DOMAIN_PATH in $ALL_DOMAINS; do
+    # Extract BC name if it's not shared
+    BC_NAME=$(echo "$DOMAIN_PATH" | cut -d'/' -f2)
+
+    # Rule: Domain cannot depend on Application, Infra, or Presentation (only for Bounded Contexts)
+    if [[ "$BC_NAME" != "shared" ]]; then
         check_violation \
             "Domain Layer Leak" \
-            "src/$BC/domain" \
-            "use crate::$BC::(application|infrastructure|presentation)" \
-            "Domain layer in '$BC' depends on outer layers!"
-
-        # Rule: No Infrastructure libraries in Domain
-        check_violation \
-            "Infrastructure Leak in Domain" \
-            "src/$BC/domain" \
-            "use (sqlx|reqwest|postgres|diesel|warp|axum|hyper|redis|serde)" \
-            "Domain layer contains infrastructure-specific dependencies (including serialization)."
-
-        # Rule: No panics or unwraps in Domain (use Result)
-        check_violation \
-            "Unsafe operations in Domain" \
-            "src/$BC/domain" \
-            "\.(unwrap|expect)\(" \
-            "Domain layer should use Result handling instead of panics (unwrap/expect)."
+            "$DOMAIN_PATH" \
+            "use crate::$BC_NAME::(application|infrastructure|presentation)" \
+            "Domain layer in '$BC_NAME' depends on outer layers!"
     fi
+
+    # Rule: No Infrastructure libraries in Domain
+    # We allow chrono for date types, but not for parsing errors or specific infra types
+    check_violation \
+        "Infrastructure Leak in Domain" \
+        "$DOMAIN_PATH" \
+        "(use (sqlx|reqwest|postgres|diesel|warp|axum|hyper|redis|serde)|sqlx::|chrono::(ParseError|format))" \
+        "Domain layer contains infrastructure-specific dependencies or types (sqlx, axum, chrono::ParseError, etc.)."
+
+    # Rule: No panics or unwraps in Domain (use Result)
+    check_violation \
+        "Unsafe operations in Domain" \
+        "$DOMAIN_PATH" \
+        "\.(unwrap|expect)\(" \
+        "Domain layer should use Result handling instead of panics (unwrap/expect)."
 done
 
 # 3. Layered Architecture: Application Layer Isolation

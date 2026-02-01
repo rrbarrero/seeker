@@ -12,16 +12,28 @@ pub enum UserValueError {
     InvalidPassword(String),
 
     #[error("Error hashing password: {0}")]
-    ErrorHashingPassword(#[from] argon2::password_hash::Error),
-
-    #[error("Database error: {0}")]
-    DatabaseError(#[from] sqlx::Error),
+    ErrorHashingPassword(String),
 
     #[error("Invalid date: {0}")]
-    InvalidDate(#[from] chrono::ParseError),
+    InvalidDate(String),
 
     #[error("Invalid date/time value")]
     InvalidDateTime,
+
+    #[error("Internal error: {0}")]
+    InternalError(String),
+}
+
+#[derive(Error, Debug)]
+pub enum AuthRepositoryError {
+    #[error("Database error: {0}")]
+    DatabaseError(String),
+
+    #[error("User not found")]
+    NotFound,
+
+    #[error("Domain error: {0}")]
+    DomainError(#[from] UserValueError),
 }
 
 #[derive(Error, Debug)]

@@ -74,7 +74,7 @@ impl IPositionRepository for PositionPostgresRepository {
             position.company.value(),
             position.role_title.value(),
             position.description.value(),
-            chrono::NaiveDate::parse_from_str(&position.applied_on.value(), "%Y-%m-%d").unwrap(),
+            position.applied_on.date(),
             position.url.value(),
             position.initial_comment.value(),
             format!("{:?}", position.status),
@@ -84,7 +84,8 @@ impl IPositionRepository for PositionPostgresRepository {
             position.deleted,
         )
         .execute(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| PositionRepositoryError::DatabaseError(e.to_string()))?;
 
         Ok(position.id)
     }
@@ -104,7 +105,7 @@ impl IPositionRepository for PositionPostgresRepository {
         match result {
             Ok(Some(row)) => Self::from_row(row).map(Some).map_err(Into::into),
             Ok(None) => Ok(None),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
         }
     }
 
@@ -119,7 +120,7 @@ impl IPositionRepository for PositionPostgresRepository {
                 .map(Self::from_row)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(Into::into),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
         }
     }
 
@@ -133,7 +134,7 @@ impl IPositionRepository for PositionPostgresRepository {
 
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e)),
+            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
         }
     }
 }

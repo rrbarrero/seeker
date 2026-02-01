@@ -82,7 +82,8 @@ impl User {
         Ok(Argon2::default()
             .verify_password(
                 password.as_bytes(),
-                &PasswordHash::try_from(self.password.value())?,
+                &PasswordHash::try_from(self.password.value())
+                    .map_err(|e| UserValueError::InternalError(e.to_string()))?,
             )
             .is_ok())
     }
@@ -176,7 +177,8 @@ mod tests {
         let user = User::load_existing(
             &id,
             email,
-            &UserPassword::hash_password(password)?,
+            &UserPassword::hash_password(password)
+                .map_err(|e| UserValueError::InternalError(e.to_string()))?,
             created,
             updated,
         )?;

@@ -124,7 +124,8 @@ impl AppliedOn {
     }
 
     pub fn new(applied_on: &str) -> Result<Self, PositionValueError> {
-        let parsed_date = DateTime::parse_from_rfc2822(applied_on)?;
+        let parsed_date = DateTime::parse_from_rfc2822(applied_on)
+            .map_err(|e| PositionValueError::InvalidDate(e.to_string()))?;
         Ok(AppliedOn {
             applied_on: parsed_date.date_naive(),
         })
@@ -132,6 +133,10 @@ impl AppliedOn {
 
     pub fn from_date(date: NaiveDate) -> Self {
         Self { applied_on: date }
+    }
+
+    pub fn date(&self) -> NaiveDate {
+        self.applied_on
     }
 }
 
