@@ -3,7 +3,7 @@ use crate::auth::domain::repositories::user_repository::IUserRepository;
 use crate::shared::domain::value_objects::UserUuid;
 
 #[cfg(test)]
-pub async fn assert_user_repository_behavior(mut repo: Box<dyn IUserRepository>, user: User) {
+pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, user: User) {
     let user_id = user.id;
 
     // 1. Test save and get

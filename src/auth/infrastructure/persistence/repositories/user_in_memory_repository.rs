@@ -31,7 +31,7 @@ impl IUserRepository for UserInMemoryRepository {
             .find(|u| u.id == user_id)
             .cloned())
     }
-    async fn save(&mut self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
+    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
         let user_id = user.id;
         self.users.write().await.push(user.clone());
         Ok(user_id)
@@ -57,7 +57,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_user_save() -> Result<(), AuthRepositoryError> {
-        let mut repo = UserInMemoryRepository::default();
+        let repo = UserInMemoryRepository::default();
 
         let id = valid_id();
         let user = User::new(&id, valid_email(), valid_password())?;
@@ -71,10 +71,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_user() -> Result<(), AuthRepositoryError> {
-        let mut repo = UserInMemoryRepository::default();
+        let repo = UserInMemoryRepository::default();
 
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
-        let user_uuid = repo.save(&user).await?;
+        let user_uuid = repo.clone().save(&user).await?;
 
         let current_user = repo
             .get(user_uuid)

@@ -20,7 +20,7 @@ impl UserPostgresRepository {
 
 #[async_trait]
 impl IUserRepository for UserPostgresRepository {
-    async fn save(&mut self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
+    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
         sqlx::query!(
             "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
             user.id.value(),
@@ -68,7 +68,7 @@ mod tests {
         let factory = TestFactory::new().await;
 
         let pool = factory.pool.clone();
-        let mut repository = UserPostgresRepository::new(pool).await;
+        let repository = UserPostgresRepository::new(pool).await;
 
         let id = uuid::Uuid::new_v4();
         let email = format!("test.{}@example.com", id);

@@ -43,7 +43,7 @@ impl TestFactory {
         let password = "S0m3V3ryStr0ngP@ssw0rd!";
         let user = User::new(&id.to_string(), &email, password).expect("User creation failed");
 
-        let mut repository = UserPostgresRepository::new(self.pool.clone()).await;
+        let repository = UserPostgresRepository::new(self.pool.clone()).await;
         repository
             .save(&user)
             .await

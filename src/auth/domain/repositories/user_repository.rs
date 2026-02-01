@@ -8,5 +8,5 @@ use crate::{
 #[async_trait]
 pub trait IUserRepository {
     async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError>;
-    async fn save(&mut self, user: &User) -> Result<UserUuid, AuthRepositoryError>;
+    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError>;
 }
