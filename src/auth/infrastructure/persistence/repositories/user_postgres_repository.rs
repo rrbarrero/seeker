@@ -41,12 +41,11 @@ impl IUserRepository for UserPostgresRepository {
         .execute(&self.pool)
         .await
         .map_err(|e| {
-            if let sqlx::Error::Database(db_err) = &e {
-                if let Some(code) = db_err.code() {
-                    if code == "23505" {
-                        return AuthRepositoryError::UserAlreadyExists;
-                    }
+            match &e {
+                sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+                    return AuthRepositoryError::UserAlreadyExists;
                 }
+                _ => {}
             }
             AuthRepositoryError::DatabaseError(e.to_string())
         })?;

@@ -36,12 +36,12 @@ impl IUserRepository for UserInMemoryRepository {
     }
     async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
         let user_id = user.id;
-        if let Some(_) = self
+        if self
             .users
             .read()
             .await
             .iter()
-            .find(|u| u.id == user_id || u.email == user.email)
+            .any(|u| u.id == user_id || u.email == user.email)
         {
             return Err(AuthRepositoryError::UserAlreadyExists);
         }
