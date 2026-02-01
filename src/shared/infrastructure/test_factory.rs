@@ -6,10 +6,16 @@ use crate::shared::config::Config;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use std::sync::{Arc, Mutex};
+
 pub struct TestFactory {
     pub pool: PgPool,
-    pub created_users: Vec<Uuid>,
-    pub created_positions: Vec<Uuid>,
+    state: Arc<Mutex<FactoryState>>,
+}
+
+struct FactoryState {
+    created_users: Vec<Uuid>,
+    created_positions: Vec<Uuid>,
 }
 
 impl TestFactory {
@@ -24,8 +30,10 @@ impl TestFactory {
 
         Self {
             pool,
-            created_users: Vec::new(),
-            created_positions: Vec::new(),
+            state: Arc::new(Mutex::new(FactoryState {
+                created_users: Vec::new(),
+                created_positions: Vec::new(),
+            })),
         }
     }
 
@@ -41,31 +49,81 @@ impl TestFactory {
             .await
             .expect("Failed to save user through repository in factory");
 
-        self.created_users.push(id);
+        self.state.lock().unwrap().created_users.push(id);
 
         user
     }
 
     pub async fn teardown(&self) {
+        let (users, positions) = {
+            let state = self.state.lock().unwrap();
+            (state.created_users.clone(), state.created_positions.clone())
+        };
+
         // Delete all positions for our created users first to avoid FK violations
-        for user_id in &self.created_users {
+        for user_id in &users {
             let _ = sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)
                 .execute(&self.pool)
                 .await;
         }
 
-        // Now delete individual positions that might not have been caught (though shouldn't exist)
-        for id in &self.created_positions {
+        // Now delete individual positions
+        for id in &positions {
             let _ = sqlx::query!("DELETE FROM positions WHERE id = $1", id)
                 .execute(&self.pool)
                 .await;
         }
 
         // Finally delete users
-        for id in &self.created_users {
+        for id in &users {
             let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
                 .execute(&self.pool)
                 .await;
+        }
+
+        let mut state = self.state.lock().unwrap();
+        state.created_users.clear();
+        state.created_positions.clear();
+    }
+    pub fn track_position(&mut self, id: Uuid) {
+        self.state.lock().unwrap().created_positions.push(id);
+    }
+}
+
+impl Drop for TestFactory {
+    fn drop(&mut self) {
+        let state = self.state.lock().unwrap();
+        if !state.created_users.is_empty() || !state.created_positions.is_empty() {
+            let pool = self.pool.clone();
+            let users = state.created_users.clone();
+            let positions = state.created_positions.clone();
+
+            // Drop can't be async, so we spawn a thread to handle the cleanup
+            // We use a new runtime to block on the async cleanup
+            std::thread::spawn(move || {
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+
+                rt.block_on(async move {
+                    for user_id in &users {
+                        let _ = sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)
+                            .execute(&pool)
+                            .await;
+                    }
+                    for id in &positions {
+                        let _ = sqlx::query!("DELETE FROM positions WHERE id = $1", id)
+                            .execute(&pool)
+                            .await;
+                    }
+                    for id in &users {
+                        let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
+                            .execute(&pool)
+                            .await;
+                    }
+                });
+            });
         }
     }
 }

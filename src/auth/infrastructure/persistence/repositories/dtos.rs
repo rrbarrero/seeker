@@ -89,8 +89,6 @@ mod tests {
                 .and_utc()
                 .naive_utc()
         );
-
-        factory.teardown().await;
     }
 
     #[tokio::test]
@@ -103,8 +101,6 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().id, user.id);
-
-        factory.teardown().await;
     }
 
     #[tokio::test]
@@ -134,7 +130,5 @@ mod tests {
         assert_eq!(dto.password, user.password().value());
         assert_eq!(dto.created_at.date(), user.created);
         assert_eq!(dto.updated_at.date(), user.updated);
-
-        factory.teardown().await;
     }
 }

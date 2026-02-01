@@ -161,12 +161,10 @@ mod tests {
         position.id = PositionUuid::new();
         position.user_id = user.id;
 
-        factory.created_positions.push(position.id.value());
+        factory.track_position(position.id.value());
         let result = repository.save(position).await;
 
         result.expect("Should save position");
-
-        factory.teardown().await;
     }
 
     #[tokio::test]
@@ -183,7 +181,7 @@ mod tests {
         position.id = PositionUuid::new();
         position.user_id = user.id;
 
-        factory.created_positions.push(position.id.value());
+        factory.track_position(position.id.value());
         let result = repository.save(position).await;
 
         let position_id = result.expect("Should save position");
@@ -191,8 +189,6 @@ mod tests {
         let result = repository.get(position_id).await;
 
         assert!(result.is_ok());
-
-        factory.teardown().await;
     }
 
     #[tokio::test]
@@ -205,20 +201,20 @@ mod tests {
         let repository = PositionPostgresRepository::new(pool).await;
 
         let mut position = create_fixture_position();
-
         position.id = PositionUuid::new();
         position.user_id = user.id;
 
-        factory.created_positions.push(position.id.value());
-        let result = repository.save(position).await;
+        repository
+            .save(position)
+            .await
+            .expect("Should save position");
 
-        let position_id = result.expect("Should save position");
-
-        let result = repository.get(position_id).await;
+        let result = repository.get_all().await;
 
         assert!(result.is_ok());
-
-        factory.teardown().await;
+        let positions = result.unwrap();
+        assert!(!positions.is_empty());
+        assert!(positions.iter().any(|p| p.user_id == user.id));
     }
 
     #[tokio::test]
@@ -235,7 +231,7 @@ mod tests {
         position.id = PositionUuid::new();
         position.user_id = user.id;
 
-        factory.created_positions.push(position.id.value());
+        factory.track_position(position.id.value());
         let result = repository.save(position).await;
 
         let position_id = result.expect("Should save position");
@@ -251,8 +247,6 @@ mod tests {
                 .expect("The Position should not be None")
                 .is_deleted()
         );
-
-        factory.teardown().await;
     }
 
     #[tokio::test]

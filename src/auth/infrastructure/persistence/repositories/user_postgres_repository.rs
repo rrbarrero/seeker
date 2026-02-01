@@ -85,21 +85,22 @@ mod tests {
         let expected_password = "S0m3V3ryStr0ngP@ssw0rd!";
         let mut factory = TestFactory::new().await;
 
-        let user = factory.create_random_user().await;
+        let created_user = factory.create_random_user().await;
 
         let pool = factory.pool.clone();
         let repository = UserPostgresRepository::new(pool).await;
 
-        let result = repository.get(user.id).await;
+        let result = repository.get(created_user.id).await;
 
         assert!(result.is_ok());
-        assert!(result.as_ref().unwrap().is_some());
         let user = result.expect("Error getting user").expect("User not found");
-        assert_eq!(user.id, user.id);
+        assert_eq!(user.id, created_user.id);
+        assert_eq!(user.email.value(), created_user.email.value());
 
-        assert!(user.verify_password(expected_password).is_ok());
-
-        factory.teardown().await;
+        assert!(
+            user.verify_password(expected_password)
+                .expect("Verification failed")
+        );
     }
 
     #[tokio::test]
@@ -118,7 +119,5 @@ mod tests {
             user,
         )
         .await;
-
-        factory.teardown().await;
     }
 }
