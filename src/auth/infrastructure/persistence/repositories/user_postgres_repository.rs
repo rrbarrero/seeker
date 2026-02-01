@@ -61,7 +61,7 @@ impl IUserRepository for UserPostgresRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::test_utils::TestFactory;
+    use crate::shared::infrastructure::test_factory::TestFactory;
 
     #[tokio::test]
     async fn test_save_user_postgres_repository() {

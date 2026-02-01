@@ -3,7 +3,7 @@ use crate::positions::application::position_service::PositionService;
 use crate::positions::domain::repositories::position_repository::IPositionRepository;
 use crate::positions::infrastructure::persistence::repositories::position_postgres_repository::PositionPostgresRepository;
 use crate::shared::config::Config;
-use crate::shared::infra::postgres_conn::get_or_create_pool;
+use crate::shared::infrastructure::postgres_conn::get_or_create_pool;
 
 pub async fn get_or_create_postgres_pool(config: &Config) -> sqlx::postgres::PgPool {
     get_or_create_pool(config).await

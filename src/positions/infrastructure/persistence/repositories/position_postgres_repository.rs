@@ -144,7 +144,8 @@ mod tests {
 
     use super::*;
     use crate::positions::domain::entities::position::PositionUuid;
-    use crate::shared::{fixtures::create_fixture_position, test_utils::TestFactory};
+    use crate::shared::fixtures::create_fixture_position;
+    use crate::shared::infrastructure::test_factory::TestFactory;
 
     #[tokio::test]
     async fn test_save_position_postgres_repository() {

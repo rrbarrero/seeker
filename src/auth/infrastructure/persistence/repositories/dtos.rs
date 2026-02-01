@@ -61,7 +61,7 @@ impl UserDto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::test_utils::TestFactory;
+    use crate::shared::infrastructure::test_factory::TestFactory;
 
     #[tokio::test]
     async fn test_user_dto_from_domain() {

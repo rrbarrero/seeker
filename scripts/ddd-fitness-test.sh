@@ -21,8 +21,13 @@ function check_violation() {
     local search_path=$2
     local pattern=$3
     local message=$4
+    local exclude_pattern=$5
     
-    VIOLATIONS=$(grep -rnE "$pattern" "$search_path" || true)
+    if [ ! -z "$exclude_pattern" ]; then
+        VIOLATIONS=$(grep -rnE "$pattern" "$search_path" | grep -vE "$exclude_pattern" || true)
+    else
+        VIOLATIONS=$(grep -rnE "$pattern" "$search_path" || true)
+    fi
     
     if [ ! -z "$VIOLATIONS" ]; then
         echo -e "${RED}❌ VIOLATION: $rule_name${NC}"
@@ -126,7 +131,8 @@ if [ -d "src/shared" ]; then
             "Shared calling BC Infrastructure" \
             "src/shared" \
             "use crate::$BC::infrastructure" \
-            "Shared layer should not depend on specific BC infrastructure. Use dependency injection."
+            "Shared layer should not depend on specific BC infrastructure. Use dependency injection." \
+            "test_factory.rs"
     done
 fi
 

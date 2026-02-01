@@ -1,8 +1,8 @@
 use crate::auth::domain::entities::user::User;
+use crate::auth::domain::repositories::user_repository::IUserRepository;
+use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::composition_root::get_or_create_postgres_pool;
 use crate::shared::config::Config;
-use crate::shared::domain::value_objects::UserPassword;
-use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -32,30 +32,18 @@ impl TestFactory {
     pub async fn create_random_user(&mut self) -> User {
         let id = Uuid::new_v4();
         let email = format!("test.{}@example.com", id);
-        let password = UserPassword::new("S0m3V3ryStr0ngP@ssw0rd!").unwrap();
+        let password = "S0m3V3ryStr0ngP@ssw0rd!";
+        let user = User::new(&id.to_string(), &email, password).expect("User creation failed");
 
-        sqlx::query!(
-            "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
-            id,
-            email,
-            password.value(),
-            Utc::now(),
-            Utc::now()
-        )
-        .execute(&self.pool)
-        .await
-        .expect("Failed to create random user");
+        let mut repository = UserPostgresRepository::new(self.pool.clone()).await;
+        repository
+            .save(&user)
+            .await
+            .expect("Failed to save user through repository in factory");
 
         self.created_users.push(id);
 
-        User::load_existing(
-            &id.to_string(),
-            &email,
-            password.value(),
-            Utc::now().date_naive(),
-            Utc::now().date_naive(),
-        )
-        .expect("Invalid user created in factory")
+        user
     }
 
     pub async fn teardown(&self) {
