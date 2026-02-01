@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
-    auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
+    auth::{
+        domain::{entities::user::User, repositories::user_repository::IUserRepository},
+        infrastructure::persistence::repositories::dtos::UserDto,
+    },
     shared::domain::{error::UserValueError, value_objects::UserUuid},
 };
 
@@ -38,12 +41,13 @@ impl IUserRepository for UserPostgresRepository {
         Ok(user.id)
     }
     async fn get(&self, user_id: UserUuid) -> Result<Option<User>, UserValueError> {
-        let result = sqlx::query!("SELECT * FROM users WHERE id = $1", user_id.value())
+        let result = sqlx::query("SELECT * FROM users WHERE id = $1")
+            .bind(user_id.value())
             .fetch_optional(&self.pool)
             .await;
 
         match result {
-            Ok(Some(row)) => User::new(&row.id.to_string(), &row.email, &row.password).map(Some),
+            Ok(Some(row)) => UserDto::from_row(&row).to_domain().map(Some),
             Ok(None) => Ok(None),
             Err(e) => Err(UserValueError::DatabaseError(e)),
         }
@@ -74,6 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_user_postgres_repository() {
+        let expected_password = "S0m3V3ryStr0ngP@ssw0rd!";
         let mut factory = TestFactory::new().await;
 
         let user = factory.create_random_user().await;
@@ -85,7 +90,10 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.as_ref().unwrap().is_some());
-        assert_eq!(result.unwrap().unwrap().id, user.id);
+        let user = result.expect("Error getting user").expect("User not found");
+        assert_eq!(user.id, user.id);
+
+        assert!(user.verify_password(expected_password).is_ok());
 
         factory.teardown().await;
     }

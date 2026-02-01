@@ -1,13 +1,14 @@
 use std::str::FromStr;
 
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use chrono::{Local, NaiveDate};
-use rand::rngs::OsRng;
-use zxcvbn::{Score, zxcvbn};
 
 use email_address::EmailAddress;
 
-use crate::shared::domain::{error::UserValueError, value_objects::UserUuid};
+use crate::shared::domain::{
+    error::UserValueError,
+    value_objects::{UserPassword, UserUuid},
+};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserEmail {
@@ -25,39 +26,6 @@ impl UserEmail {
                 email: email.to_string(),
             })
             .ok_or_else(|| UserValueError::InvalidEmail(email.to_string()))
-    }
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct UserPassword {
-    password: String,
-}
-
-impl UserPassword {
-    pub fn value(&self) -> &str {
-        &self.password
-    }
-
-    pub fn new(password: &str) -> Result<Self, UserValueError> {
-        (zxcvbn(password, &[]).score() >= Score::Three)
-            .then(|| {
-                let hashed = Self::hash_password(password)?;
-                Ok(Self { password: hashed })
-            })
-            .ok_or_else(|| UserValueError::InvalidPassword(password.to_string()))?
-    }
-
-    pub fn hash_password(password: &str) -> Result<String, UserValueError> {
-        let salt = SaltString::generate(&mut OsRng);
-
-        let argon2 = Argon2::default();
-
-        let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)
-            .map_err(UserValueError::ErrorHashingPassword)?
-            .to_string();
-
-        Ok(password_hash)
     }
 }
 
@@ -83,6 +51,25 @@ impl User {
         let created = now;
         let updated = now;
         Ok(User {
+            id,
+            email,
+            password,
+            created,
+            updated,
+        })
+    }
+
+    pub fn load_existing(
+        id: &str,
+        email: &str,
+        password: &str,
+        created: NaiveDate,
+        updated: NaiveDate,
+    ) -> Result<Self, UserValueError> {
+        let id = UserUuid::from_str(id)?;
+        let email = UserEmail::new(email)?;
+        let password = UserPassword::set_password_already_hashed(password);
+        Ok(Self {
             id,
             email,
             password,
@@ -175,6 +162,34 @@ mod tests {
         let result = user.verify_password(password);
 
         assert!(matches!(result, Ok(true)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_existing() -> Result<(), UserValueError> {
+        let id = valid_id();
+        let email = valid_email();
+        let password = valid_password();
+        let created = Local::now().naive_local().date();
+        let updated = Local::now().naive_local().date();
+
+        let user = User::load_existing(
+            &id,
+            email,
+            &UserPassword::hash_password(password)?,
+            created,
+            updated,
+        )?;
+
+        assert_eq!(user.id.value().to_string(), id);
+        assert_eq!(user.email.value(), email);
+        assert_ne!(user.password.value(), password);
+        assert_eq!(user.created, created);
+        assert_eq!(user.updated, updated);
+
+        assert!(user.verify_password(password)?);
+        assert!(!user.verify_password("123")?);
+
         Ok(())
     }
 }
