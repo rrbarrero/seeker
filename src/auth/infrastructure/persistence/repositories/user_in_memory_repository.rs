@@ -4,7 +4,10 @@ use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::{
-    auth::domain::{entities::user::User, repositories::user_repository::IUserRepository},
+    auth::domain::{
+        entities::user::{User, UserEmail},
+        repositories::user_repository::IUserRepository,
+    },
     shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
 };
 
@@ -35,6 +38,15 @@ impl IUserRepository for UserInMemoryRepository {
         let user_id = user.id;
         self.users.write().await.push(user.clone());
         Ok(user_id)
+    }
+    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepositoryError> {
+        Ok(self
+            .users
+            .read()
+            .await
+            .iter()
+            .find(|u| u.email == email)
+            .cloned())
     }
 }
 
@@ -96,6 +108,23 @@ mod tests {
             user,
         )
         .await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_find_by_email_in_memory_repository() -> Result<(), AuthRepositoryError> {
+        let repo = UserInMemoryRepository::default();
+
+        let user = User::new(&valid_id(), valid_email(), valid_password())?;
+        let _ = repo.clone().save(&user).await?;
+
+        let current_user = repo
+            .find_by_email(user.clone().email)
+            .await
+            .expect("Should not error on get")
+            .expect("Result user was expected at this point!");
+
+        assert_eq!(current_user, user);
         Ok(())
     }
 }

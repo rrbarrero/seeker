@@ -2,7 +2,10 @@ use async_trait::async_trait;
 
 use crate::{
     auth::{
-        domain::{entities::user::User, repositories::user_repository::IUserRepository},
+        domain::{
+            entities::user::{User, UserEmail},
+            repositories::user_repository::IUserRepository,
+        },
         infrastructure::persistence::repositories::dtos::UserDto,
     },
     shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
@@ -44,6 +47,21 @@ impl IUserRepository for UserPostgresRepository {
     async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError> {
         let result = sqlx::query("SELECT * FROM users WHERE id = $1")
             .bind(user_id.value())
+            .fetch_optional(&self.pool)
+            .await;
+
+        match result {
+            Ok(Some(row)) => UserDto::from_row(&row)
+                .to_domain()
+                .map(Some)
+                .map_err(AuthRepositoryError::from),
+            Ok(None) => Ok(None),
+            Err(e) => Err(AuthRepositoryError::DatabaseError(e.to_string())),
+        }
+    }
+    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepositoryError> {
+        let result = sqlx::query("SELECT * FROM users WHERE email = $1")
+            .bind(email.value())
             .fetch_optional(&self.pool)
             .await;
 
@@ -119,5 +137,28 @@ mod tests {
             user,
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn test_find_by_email_postgres_repository() {
+        let expected_password = "S0m3V3ryStr0ngP@ssw0rd!";
+        let mut factory = TestFactory::new().await;
+
+        let created_user = factory.create_random_user().await;
+
+        let pool = factory.pool.clone();
+        let repository = UserPostgresRepository::new(pool).await;
+
+        let result = repository.find_by_email(created_user.clone().email).await;
+
+        assert!(result.is_ok());
+        let user = result.expect("Error getting user").expect("User not found");
+        assert_eq!(user.id, created_user.id);
+        assert_eq!(user.email.value(), created_user.email.value());
+
+        assert!(
+            user.verify_password(expected_password)
+                .expect("Verification failed")
+        );
     }
 }

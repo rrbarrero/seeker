@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum AuthError {
     #[error("Invalid credentials")]
     InvalidCredentials,
@@ -10,4 +10,8 @@ pub enum AuthError {
     TokenExpired,
     #[error("Internal server error")]
     InternalServerError,
+    #[error("Invalid email")]
+    InvalidEmail,
+    #[error("Invalid password")]
+    InvalidPassword,
 }

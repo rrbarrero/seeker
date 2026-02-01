@@ -4,6 +4,8 @@ use crate::shared::domain::value_objects::UserUuid;
 
 #[cfg(test)]
 pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, user: User) {
+    use crate::auth::domain::entities::user::UserEmail;
+
     let user_id = user.id;
 
     // 1. Test save and get
@@ -27,5 +29,26 @@ pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, use
     assert!(
         result.is_none(),
         "Should return None for non-existent user, not an error"
+    );
+
+    // 3. Test find by email
+    let fetched_by_email = repo
+        .find_by_email(user.clone().email)
+        .await
+        .expect("Should not error on find by email")
+        .expect("Should find saved user by email");
+
+    assert_eq!(fetched_by_email.id, user_id);
+    assert_eq!(fetched_by_email.email.value(), user.email.value());
+
+    // 4. Test finding non-existent user by email
+    let non_existent_email = UserEmail::new("nonexistent@example.com").unwrap();
+    let result = repo
+        .find_by_email(non_existent_email)
+        .await
+        .expect("Should not error on non-existent find by email");
+    assert!(
+        result.is_none(),
+        "Should return None for non-existent user by email, not an error"
     );
 }

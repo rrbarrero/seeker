@@ -1,1 +1,1 @@
-// Application layer for auth
+pub mod auth_service;
