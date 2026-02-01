@@ -65,6 +65,17 @@ async fn test_save_duplicate_user(repo: &dyn IUserRepository, user: &User) {
     let result = repo.save(user).await;
     assert!(
         result.is_err(),
-        "Should return error when saving duplicate user"
+        "Should return error when saving user with same ID"
+    );
+
+    // Test duplicate email with different ID
+    let new_user_id = UserUuid::new().to_string();
+    let duplicate_email_user = User::new(&new_user_id, user.email.value(), "AnotherP@ssw0rd!")
+        .expect("Should create user");
+
+    let result_email = repo.save(&duplicate_email_user).await;
+    assert!(
+        result_email.is_err(),
+        "Should return error when saving user with duplicate email"
     );
 }

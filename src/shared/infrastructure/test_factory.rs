@@ -20,13 +20,19 @@ struct FactoryState {
 
 impl TestFactory {
     pub async fn new() -> Self {
-        let config = Config::default();
+        let config = Config::test_default();
         let pool = get_or_create_postgres_pool(&config).await;
 
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("Failed to migrate database");
+        static MIGRATION_ONCE: tokio::sync::OnceCell<()> = tokio::sync::OnceCell::const_new();
+
+        MIGRATION_ONCE
+            .get_or_init(|| async {
+                sqlx::migrate!("./migrations")
+                    .run(&pool)
+                    .await
+                    .expect("Failed to migrate database");
+            })
+            .await;
 
         Self {
             pool,
@@ -94,12 +100,11 @@ impl Drop for TestFactory {
     fn drop(&mut self) {
         let state = self.state.lock().unwrap();
         if !state.created_users.is_empty() || !state.created_positions.is_empty() {
-            let pool = self.pool.clone();
+            // Drop can't be async, so we spawn a thread to handle the cleanup
+            // We use a new runtime to block on the async cleanup
             let users = state.created_users.clone();
             let positions = state.created_positions.clone();
 
-            // Drop can't be async, so we spawn a thread to handle the cleanup
-            // We use a new runtime to block on the async cleanup
             std::thread::spawn(move || {
                 let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -107,20 +112,26 @@ impl Drop for TestFactory {
                     .unwrap();
 
                 rt.block_on(async move {
-                    for user_id in &users {
-                        let _ = sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)
-                            .execute(&pool)
-                            .await;
-                    }
-                    for id in &positions {
-                        let _ = sqlx::query!("DELETE FROM positions WHERE id = $1", id)
-                            .execute(&pool)
-                            .await;
-                    }
-                    for id in &users {
-                        let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
-                            .execute(&pool)
-                            .await;
+                    // Create a fresh pool for cleanup to avoid Runtime/shutdown issues with the test pool
+                    let config = Config::default();
+                    if let Ok(cleanup_pool) = sqlx::PgPool::connect(&config.postgres_url).await {
+                        for user_id in &users {
+                            let _ =
+                                sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)
+                                    .execute(&cleanup_pool)
+                                    .await;
+                        }
+                        for id in &positions {
+                            let _ = sqlx::query!("DELETE FROM positions WHERE id = $1", id)
+                                .execute(&cleanup_pool)
+                                .await;
+                        }
+                        for id in &users {
+                            let _ = sqlx::query!("DELETE FROM users WHERE id = $1", id)
+                                .execute(&cleanup_pool)
+                                .await;
+                        }
+                        cleanup_pool.close().await;
                     }
                 });
             });

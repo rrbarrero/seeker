@@ -7,7 +7,7 @@ static POOL: OnceCell<PgPool> = OnceCell::const_new();
 pub async fn get_or_create_pool(config: &Config) -> PgPool {
     if config.environment == Environment::Testing {
         return PgPoolOptions::new()
-            .max_connections(5)
+            .max_connections(10)
             .acquire_timeout(std::time::Duration::from_secs(30))
             .connect(&config.postgres_url)
             .await
