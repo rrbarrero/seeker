@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::shared::domain::error::{AuthRepositoryError, UserValueError};
+
 #[derive(Debug, Error, PartialEq)]
 pub enum AuthError {
     #[error("Invalid credentials")]
@@ -14,4 +16,13 @@ pub enum AuthError {
     InvalidEmail,
     #[error("Invalid password")]
     InvalidPassword,
+}
+
+#[derive(Debug, Error, PartialEq)]
+pub enum AuthRegisterError {
+    #[error("Invalid user values")]
+    InvalidUserValues(#[from] UserValueError),
+
+    #[error("Error saving user")]
+    ErrorSavingUser(#[from] AuthRepositoryError),
 }

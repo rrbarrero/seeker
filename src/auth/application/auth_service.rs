@@ -1,9 +1,14 @@
-use crate::auth::domain::{
-    entities::{
-        errors::AuthError,
-        user::{User, UserEmail},
+use uuid::Uuid;
+
+use crate::{
+    auth::domain::{
+        entities::{
+            errors::{AuthError, AuthRegisterError},
+            user::{User, UserEmail},
+        },
+        repositories::user_repository::IUserRepository,
     },
-    repositories::user_repository::IUserRepository,
+    shared::domain::value_objects::UserUuid,
 };
 
 pub struct AuthService {
@@ -26,6 +31,13 @@ impl AuthService {
             },
             _ => Err(AuthError::InvalidCredentials),
         }
+    }
+
+    pub async fn signup(&self, email: &str, password: &str) -> Result<UserUuid, AuthRegisterError> {
+        let user_id = Uuid::new_v4().to_string();
+        let user = User::new(&user_id, email, password)?;
+        let user_id = self.user_repository.save(&user).await?;
+        Ok(user_id)
     }
 }
 
@@ -94,5 +106,62 @@ mod tests {
             .login("nonexistent@example.com", "password")
             .await;
         assert_eq!(result, Err(AuthError::InvalidCredentials));
+    }
+
+    #[tokio::test]
+    async fn test_auth_service_signup_success() {
+        let repo = Box::new(UserInMemoryRepository::default());
+        let auth_service = AuthService::new(repo);
+
+        let result = auth_service
+            .signup("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
+            .await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_auth_service_signup_invalid_email() {
+        let repo = Box::new(UserInMemoryRepository::default());
+        let auth_service = AuthService::new(repo);
+
+        let result = auth_service.signup("invalid-email", "password").await;
+        assert!(matches!(
+            result,
+            Err(AuthRegisterError::InvalidUserValues(_))
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_auth_service_signup_invalid_password() {
+        let repo = Box::new(UserInMemoryRepository::default());
+        let auth_service = AuthService::new(repo);
+
+        let result = auth_service.signup("test@example.com", "weak").await;
+        assert!(matches!(
+            result,
+            Err(AuthRegisterError::InvalidUserValues(_))
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_auth_service_signup_user_already_exists() {
+        let user_id = Uuid::new_v4();
+        let user = User::new(
+            &user_id.to_string(),
+            "test@example.com",
+            "S0m3V3ryStr0ngP@ssw0rd!",
+        )
+        .expect("Error creating user");
+        let repo = Box::new(UserInMemoryRepository::default());
+        repo.save(&user).await.unwrap();
+        let auth_service = AuthService::new(repo);
+
+        let result = auth_service
+            .signup("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
+            .await;
+        assert!(matches!(
+            result,
+            Err(AuthRegisterError::InvalidUserValues(_))
+        ));
     }
 }

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum UserValueError {
     #[error("Wrong uuid format: `{0}`")]
     InvalidUuid(#[from] uuid::Error),
@@ -24,7 +24,7 @@ pub enum UserValueError {
     InternalError(String),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum AuthRepositoryError {
     #[error("Database error: {0}")]
     DatabaseError(String),
