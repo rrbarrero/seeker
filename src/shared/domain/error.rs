@@ -34,6 +34,9 @@ pub enum AuthRepositoryError {
 
     #[error("Domain error: {0}")]
     DomainError(#[from] UserValueError),
+
+    #[error("User already exists")]
+    UserAlreadyExists,
 }
 
 #[derive(Error, Debug)]

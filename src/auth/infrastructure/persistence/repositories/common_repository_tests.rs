@@ -4,23 +4,28 @@ use crate::shared::domain::value_objects::UserUuid;
 
 #[cfg(test)]
 pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, user: User) {
-    use crate::auth::domain::entities::user::UserEmail;
+    // Run modular tests
+    test_save_and_get(repo.as_ref(), &user).await;
+    test_get_non_existent(repo.as_ref()).await;
+    test_find_by_email(repo.as_ref(), &user).await;
+    test_find_by_email_non_existent(repo.as_ref()).await;
+    test_save_duplicate_user(repo.as_ref(), &user).await;
+}
 
-    let user_id = user.id;
-
-    // 1. Test save and get
-    repo.save(&user).await.expect("Should save user");
+async fn test_save_and_get(repo: &dyn IUserRepository, user: &User) {
+    repo.save(user).await.expect("Should save user");
 
     let fetched = repo
-        .get(user_id)
+        .get(user.id)
         .await
         .expect("Should not error on get")
         .expect("Should find saved user");
 
-    assert_eq!(fetched.id, user_id);
+    assert_eq!(fetched.id, user.id);
     assert_eq!(fetched.email.value(), user.email.value());
+}
 
-    // 2. Test getting non-existent user
+async fn test_get_non_existent(repo: &dyn IUserRepository) {
     let non_existent_id = UserUuid::new();
     let result = repo
         .get(non_existent_id)
@@ -30,18 +35,21 @@ pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, use
         result.is_none(),
         "Should return None for non-existent user, not an error"
     );
+}
 
-    // 3. Test find by email
+async fn test_find_by_email(repo: &dyn IUserRepository, user: &User) {
     let fetched_by_email = repo
         .find_by_email(user.clone().email)
         .await
         .expect("Should not error on find by email")
         .expect("Should find saved user by email");
 
-    assert_eq!(fetched_by_email.id, user_id);
+    assert_eq!(fetched_by_email.id, user.id);
     assert_eq!(fetched_by_email.email.value(), user.email.value());
+}
 
-    // 4. Test finding non-existent user by email
+async fn test_find_by_email_non_existent(repo: &dyn IUserRepository) {
+    use crate::auth::domain::entities::user::UserEmail;
     let non_existent_email = UserEmail::new("nonexistent@example.com").unwrap();
     let result = repo
         .find_by_email(non_existent_email)
@@ -50,5 +58,13 @@ pub async fn assert_user_repository_behavior(repo: Box<dyn IUserRepository>, use
     assert!(
         result.is_none(),
         "Should return None for non-existent user by email, not an error"
+    );
+}
+
+async fn test_save_duplicate_user(repo: &dyn IUserRepository, user: &User) {
+    let result = repo.save(user).await;
+    assert!(
+        result.is_err(),
+        "Should return error when saving duplicate user"
     );
 }

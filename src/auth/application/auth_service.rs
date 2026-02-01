@@ -44,9 +44,12 @@ impl AuthService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth::{
-        domain::entities::user::User,
-        infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository,
+    use crate::{
+        auth::{
+            domain::entities::user::User,
+            infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository,
+        },
+        shared::domain::error::AuthRepositoryError,
     };
     use uuid::Uuid;
 
@@ -159,9 +162,12 @@ mod tests {
         let result = auth_service
             .signup("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
             .await;
+        println!("Result: {:?}", result);
         assert!(matches!(
             result,
-            Err(AuthRegisterError::InvalidUserValues(_))
+            Err(AuthRegisterError::ErrorSavingUser(
+                AuthRepositoryError::UserAlreadyExists
+            ))
         ));
     }
 }
