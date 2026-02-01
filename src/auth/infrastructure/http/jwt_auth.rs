@@ -3,7 +3,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, errors::ErrorKi
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::domain::entities::{errors::AuthError, user::User},
+    auth::{application::errors::AuthError, domain::entities::user::User},
     shared::config::Config,
 };
 
@@ -25,7 +25,9 @@ pub fn create_jwt(user: &User, config: &Config) -> Result<String, AuthError> {
 
     match token {
         Ok(token) => Ok(token),
-        Err(_) => Err(AuthError::InternalServerError),
+        Err(_) => Err(AuthError::InternalError(
+            "Failed to create token".to_string(),
+        )),
     }
 }
 
@@ -38,7 +40,9 @@ pub fn validate_token(token: &str, config: &Config) -> Result<String, AuthError>
         Err(err) => match err.kind() {
             ErrorKind::ExpiredSignature => Err(AuthError::TokenExpired),
             ErrorKind::InvalidToken => Err(AuthError::InvalidToken),
-            _ => Err(AuthError::InternalServerError),
+            _ => Err(AuthError::InternalError(
+                "Failed to decode token".to_string(),
+            )),
         },
     }
 }

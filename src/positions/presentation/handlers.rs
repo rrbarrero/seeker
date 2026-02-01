@@ -5,7 +5,7 @@ use crate::positions::{
     domain::entities::position::PositionUuid,
     presentation::{
         dtos::{PositionResponseDto, PositionUuidDto, SavePositionRequestDto},
-        errors::PositionPresentationError,
+        errors::PositionApiError,
     },
 };
 use axum::{
@@ -16,7 +16,7 @@ use axum::{
 
 pub async fn get_positions(
     State(service): State<Arc<PositionService>>,
-) -> Result<Json<Vec<PositionResponseDto>>, PositionPresentationError> {
+) -> Result<Json<Vec<PositionResponseDto>>, PositionApiError> {
     let positions = service.get_positions().await?;
     let positions_dto = positions.iter().map(PositionResponseDto::from).collect();
     Ok(Json(positions_dto))
@@ -25,19 +25,19 @@ pub async fn get_positions(
 pub async fn get_position(
     State(service): State<Arc<PositionService>>,
     Path(position_id): Path<PositionUuidDto>,
-) -> Result<Json<PositionResponseDto>, PositionPresentationError> {
+) -> Result<Json<PositionResponseDto>, PositionApiError> {
     let id: PositionUuid = position_id.try_into()?;
     let position = service.get_position(id).await?;
     match position {
         Some(position) => Ok(Json(PositionResponseDto::from(&position))),
-        None => Err(PositionPresentationError::PositionNotFound(id)),
+        None => Err(PositionApiError::PositionNotFound(id)),
     }
 }
 
 pub async fn save_position(
     State(service): State<Arc<PositionService>>,
     Json(payload): Json<SavePositionRequestDto>,
-) -> Result<Json<PositionUuidDto>, PositionPresentationError> {
+) -> Result<Json<PositionUuidDto>, PositionApiError> {
     let position_uuid = service.save(payload.to_new_position()?).await?;
     Ok(Json(position_uuid.into()))
 }
@@ -45,7 +45,7 @@ pub async fn save_position(
 pub async fn remove_position(
     State(service): State<Arc<PositionService>>,
     Path(position_id): Path<PositionUuidDto>,
-) -> Result<StatusCode, PositionPresentationError> {
+) -> Result<StatusCode, PositionApiError> {
     service.remove(position_id.try_into()?).await?;
     Ok(StatusCode::NO_CONTENT)
 }

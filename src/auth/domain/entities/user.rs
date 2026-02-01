@@ -5,10 +5,8 @@ use chrono::{Local, NaiveDate};
 
 use email_address::EmailAddress;
 
-use crate::shared::domain::{
-    error::UserValueError,
-    value_objects::{UserPassword, UserUuid},
-};
+use crate::auth::domain::errors::AuthDomainError;
+use crate::shared::domain::value_objects::{UserPassword, UserUuid};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserEmail {
@@ -20,12 +18,12 @@ impl UserEmail {
         &self.email
     }
 
-    pub fn new(email: &str) -> Result<Self, UserValueError> {
+    pub fn new(email: &str) -> Result<Self, AuthDomainError> {
         EmailAddress::is_valid(email)
             .then(|| Self {
                 email: email.to_string(),
             })
-            .ok_or_else(|| UserValueError::InvalidEmail(email.to_string()))
+            .ok_or_else(|| AuthDomainError::invalid_email(email.to_string()))
     }
 }
 
@@ -43,7 +41,7 @@ impl User {
         &self.password
     }
 
-    pub fn new(id: &str, email: &str, password: &str) -> Result<Self, UserValueError> {
+    pub fn new(id: &str, email: &str, password: &str) -> Result<Self, AuthDomainError> {
         let id = UserUuid::from_str(id)?;
         let email = UserEmail::new(email)?;
         let password = UserPassword::new(password)?;
@@ -65,7 +63,7 @@ impl User {
         password: &str,
         created: NaiveDate,
         updated: NaiveDate,
-    ) -> Result<Self, UserValueError> {
+    ) -> Result<Self, AuthDomainError> {
         let id = UserUuid::from_str(id)?;
         let email = UserEmail::new(email)?;
         let password = UserPassword::set_password_already_hashed(password);
@@ -78,12 +76,12 @@ impl User {
         })
     }
 
-    pub fn verify_password(&self, password: &str) -> Result<bool, UserValueError> {
+    pub fn verify_password(&self, password: &str) -> Result<bool, AuthDomainError> {
         Ok(Argon2::default()
             .verify_password(
                 password.as_bytes(),
                 &PasswordHash::try_from(self.password.value())
-                    .map_err(|e| UserValueError::InternalError(e.to_string()))?,
+                    .map_err(|e| AuthDomainError::InternalError(e.to_string()))?,
             )
             .is_ok())
     }
@@ -91,6 +89,7 @@ impl User {
 
 #[cfg(test)]
 mod tests {
+    use crate::shared::domain::errors::SharedDomainError;
     use uuid::Uuid;
 
     use super::*;
@@ -111,7 +110,7 @@ mod tests {
         let id = "123";
         let result = UserUuid::from_str(id);
 
-        assert!(matches!(result, Err(UserValueError::InvalidUuid(_))));
+        assert!(matches!(result, Err(SharedDomainError::InvalidUuid(_))));
     }
 
     #[test]
@@ -119,7 +118,10 @@ mod tests {
         let email = "123";
         let result = UserEmail::new(email);
 
-        assert!(matches!(result, Err(UserValueError::InvalidEmail(_))));
+        assert!(matches!(
+            result,
+            Err(AuthDomainError::Shared(SharedDomainError::InvalidEmail(_)))
+        ));
     }
 
     #[test]
@@ -127,7 +129,12 @@ mod tests {
         let password = "123";
         let result = User::new(&valid_id(), valid_email(), password);
 
-        assert!(matches!(result, Err(UserValueError::InvalidPassword(_))));
+        assert!(matches!(
+            result,
+            Err(AuthDomainError::Shared(SharedDomainError::InvalidPassword(
+                _
+            )))
+        ));
     }
 
     #[test]
@@ -138,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_password() -> Result<(), UserValueError> {
+    fn test_check_password() -> Result<(), AuthDomainError> {
         let password = valid_password();
         let user = User::new(&valid_id(), valid_email(), password)?;
         let result = user.verify_password(password);
@@ -148,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_password_wrong() -> Result<(), UserValueError> {
+    fn test_check_password_wrong() -> Result<(), AuthDomainError> {
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
         let result = user.verify_password("123");
 
@@ -157,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn test_not_ascii_password() -> Result<(), UserValueError> {
+    fn test_not_ascii_password() -> Result<(), AuthDomainError> {
         let password = "ñÑ☢️fhadsfhKJHlkfhjvnluYu,....";
         let user = User::new(&valid_id(), valid_email(), password)?;
         let result = user.verify_password(password);
@@ -167,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_existing() -> Result<(), UserValueError> {
+    fn test_load_existing() -> Result<(), AuthDomainError> {
         let id = valid_id();
         let email = valid_email();
         let password = valid_password();
@@ -178,7 +185,7 @@ mod tests {
             &id,
             email,
             &UserPassword::hash_password(password)
-                .map_err(|e| UserValueError::InternalError(e.to_string()))?,
+                .map_err(|e| AuthDomainError::InternalError(e.to_string()))?,
             created,
             updated,
         )?;

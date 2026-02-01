@@ -1,15 +1,13 @@
 use uuid::Uuid;
 
-use crate::{
-    auth::domain::{
-        entities::{
-            errors::{AuthError, AuthRegisterError},
-            user::{User, UserEmail},
-        },
+use crate::auth::{
+    application::errors::AuthError,
+    domain::{
+        entities::user::{User, UserEmail},
         repositories::user_repository::IUserRepository,
     },
-    shared::domain::value_objects::UserUuid,
 };
+use crate::shared::domain::value_objects::UserUuid;
 
 pub struct AuthService {
     user_repository: Box<dyn IUserRepository>,
@@ -21,19 +19,19 @@ impl AuthService {
     }
 
     pub async fn login(&self, email: &str, password: &str) -> Result<User, AuthError> {
-        let user_email: UserEmail = UserEmail::new(email).map_err(|_| AuthError::InvalidEmail)?;
+        let user_email: UserEmail = UserEmail::new(email).map_err(AuthError::from)?;
         let user = self.user_repository.find_by_email(user_email).await;
         match user {
             Ok(Some(user)) => match user.verify_password(password) {
                 Ok(true) => Ok(user),
-                Ok(false) => Err(AuthError::InvalidPassword),
-                Err(_) => Err(AuthError::InternalServerError),
+                Ok(false) => Err(AuthError::InvalidCredentials),
+                Err(e) => Err(AuthError::from(e)),
             },
             _ => Err(AuthError::InvalidCredentials),
         }
     }
 
-    pub async fn signup(&self, email: &str, password: &str) -> Result<UserUuid, AuthRegisterError> {
+    pub async fn signup(&self, email: &str, password: &str) -> Result<UserUuid, AuthError> {
         let user_id = Uuid::new_v4().to_string();
         let user = User::new(&user_id, email, password)?;
         let user_id = self.user_repository.save(&user).await?;
@@ -44,12 +42,10 @@ impl AuthService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        auth::{
-            domain::entities::user::User,
-            infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository,
-        },
-        shared::domain::error::AuthRepositoryError,
+    use crate::auth::{
+        application::errors::AuthError,
+        domain::{entities::user::User, errors::AuthRepoError},
+        infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository,
     };
     use uuid::Uuid;
 
@@ -78,7 +74,7 @@ mod tests {
         let auth_service = AuthService::new(repo);
 
         let result = auth_service.login("invalid-email", "password").await;
-        assert_eq!(result, Err(AuthError::InvalidEmail));
+        assert!(matches!(result, Err(AuthError::DomainError(_))));
     }
 
     #[tokio::test]
@@ -97,7 +93,7 @@ mod tests {
         let result = auth_service
             .login("test@example.com", "wrong-password")
             .await;
-        assert_eq!(result, Err(AuthError::InvalidPassword));
+        assert_eq!(result, Err(AuthError::InvalidCredentials));
     }
 
     #[tokio::test]
@@ -128,10 +124,7 @@ mod tests {
         let auth_service = AuthService::new(repo);
 
         let result = auth_service.signup("invalid-email", "password").await;
-        assert!(matches!(
-            result,
-            Err(AuthRegisterError::InvalidUserValues(_))
-        ));
+        assert!(matches!(result, Err(AuthError::DomainError(_))));
     }
 
     #[tokio::test]
@@ -140,33 +133,25 @@ mod tests {
         let auth_service = AuthService::new(repo);
 
         let result = auth_service.signup("test@example.com", "weak").await;
-        assert!(matches!(
-            result,
-            Err(AuthRegisterError::InvalidUserValues(_))
-        ));
+        assert!(matches!(result, Err(AuthError::DomainError(_))));
     }
 
     #[tokio::test]
     async fn test_auth_service_signup_user_already_exists() {
+        let email = "test@example.com";
         let user_id = Uuid::new_v4();
-        let user = User::new(
-            &user_id.to_string(),
-            "test@example.com",
-            "S0m3V3ryStr0ngP@ssw0rd!",
-        )
-        .expect("Error creating user");
+        let user = User::new(&user_id.to_string(), email, "S0m3V3ryStr0ngP@ssw0rd!")
+            .expect("Error creating user");
         let repo = Box::new(UserInMemoryRepository::default());
         repo.save(&user).await.unwrap();
         let auth_service = AuthService::new(repo);
 
-        let result = auth_service
-            .signup("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
-            .await;
+        let result = auth_service.signup(email, "S0m3V3ryStr0ngP@ssw0rd!").await;
         println!("Result: {:?}", result);
         assert!(matches!(
             result,
-            Err(AuthRegisterError::ErrorSavingUser(
-                AuthRepositoryError::UserAlreadyExists
+            Err(AuthError::RepositoryError(
+                AuthRepoError::UserAlreadyExists(_)
             ))
         ));
     }

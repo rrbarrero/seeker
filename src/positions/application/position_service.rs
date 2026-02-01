@@ -1,6 +1,8 @@
-use crate::positions::domain::entities::position::{Position, PositionUuid};
-use crate::positions::domain::entities::position_error::PositionServiceError;
-use crate::positions::domain::repositories::position_repository::IPositionRepository;
+use crate::positions::{
+    application::errors::PositionServiceError,
+    domain::entities::position::{Position, PositionUuid},
+    domain::repositories::position_repository::IPositionRepository,
+};
 
 pub struct PositionService {
     repo: Box<dyn IPositionRepository>,

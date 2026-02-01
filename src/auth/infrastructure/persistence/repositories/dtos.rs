@@ -1,6 +1,9 @@
 use sqlx::{Row, postgres::PgRow};
 
-use crate::{auth::domain::entities::user::User, shared::domain::error::UserValueError};
+use crate::{
+    auth::domain::{entities::user::User, errors::AuthDomainError},
+    shared::domain::errors::SharedDomainError,
+};
 
 #[derive(Clone, Debug)]
 pub struct UserDto {
@@ -26,7 +29,7 @@ impl UserDto {
         }
     }
 
-    pub fn from_domain(user: &User) -> Result<Self, UserValueError> {
+    pub fn from_domain(user: &User) -> Result<Self, AuthDomainError> {
         Ok(Self {
             id: user.id.value(),
             email: user.email.value().to_string(),
@@ -34,20 +37,20 @@ impl UserDto {
             created_at: user
                 .created
                 .and_hms_opt(0, 0, 0)
-                .ok_or(UserValueError::InvalidDateTime)?
+                .ok_or(AuthDomainError::Shared(SharedDomainError::InvalidDateTime))?
                 .and_utc()
                 .naive_utc(),
 
             updated_at: user
                 .updated
                 .and_hms_opt(0, 0, 0)
-                .ok_or(UserValueError::InvalidDateTime)?
+                .ok_or(AuthDomainError::Shared(SharedDomainError::InvalidDateTime))?
                 .and_utc()
                 .naive_utc(),
         })
     }
 
-    pub fn to_domain(self) -> Result<User, UserValueError> {
+    pub fn to_domain(self) -> Result<User, AuthDomainError> {
         User::load_existing(
             &self.id.to_string(),
             &self.email,

@@ -6,9 +6,10 @@ use tokio::sync::RwLock;
 use crate::{
     auth::domain::{
         entities::user::{User, UserEmail},
+        errors::AuthRepoError,
         repositories::user_repository::IUserRepository,
     },
-    shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
+    shared::domain::value_objects::UserUuid,
 };
 
 #[derive(Clone)]
@@ -25,7 +26,7 @@ impl Default for UserInMemoryRepository {
 
 #[async_trait]
 impl IUserRepository for UserInMemoryRepository {
-    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError> {
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepoError> {
         Ok(self
             .users
             .read()
@@ -34,7 +35,7 @@ impl IUserRepository for UserInMemoryRepository {
             .find(|u| u.id == user_id)
             .cloned())
     }
-    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
+    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepoError> {
         let user_id = user.id;
         if self
             .users
@@ -43,12 +44,14 @@ impl IUserRepository for UserInMemoryRepository {
             .iter()
             .any(|u| u.id == user_id || u.email == user.email)
         {
-            return Err(AuthRepositoryError::UserAlreadyExists);
+            return Err(AuthRepoError::UserAlreadyExists(
+                user.email.value().to_string(),
+            ));
         }
         self.users.write().await.push(user.clone());
         Ok(user_id)
     }
-    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepositoryError> {
+    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepoError> {
         Ok(self
             .users
             .read()
@@ -77,7 +80,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_user_save() -> Result<(), AuthRepositoryError> {
+    async fn test_user_save() -> Result<(), AuthRepoError> {
         let repo = UserInMemoryRepository::default();
 
         let id = valid_id();
@@ -91,7 +94,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_user() -> Result<(), AuthRepositoryError> {
+    async fn test_get_user() -> Result<(), AuthRepoError> {
         let repo = UserInMemoryRepository::default();
 
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
@@ -108,7 +111,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_repository_contract() -> Result<(), AuthRepositoryError> {
+    async fn test_repository_contract() -> Result<(), AuthRepoError> {
         let repo = UserInMemoryRepository::default();
         let user = User::new(&valid_id(), valid_email(), valid_password())?;
 
@@ -121,7 +124,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_find_by_email_in_memory_repository() -> Result<(), AuthRepositoryError> {
+    async fn test_find_by_email_in_memory_repository() -> Result<(), AuthRepoError> {
         let repo = UserInMemoryRepository::default();
 
         let user = User::new(&valid_id(), valid_email(), valid_password())?;

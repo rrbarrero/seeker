@@ -4,8 +4,8 @@ use chrono::{DateTime, Local, NaiveDate};
 use uuid::Uuid;
 
 use crate::{
-    positions::domain::entities::position_error::PositionValueError,
-    shared::domain::value_objects::UserUuid,
+    positions::domain::errors::PositionDomainError,
+    shared::domain::{errors::SharedDomainError, value_objects::UserUuid},
 };
 
 #[derive(PartialEq, Clone, Debug, Copy)]
@@ -30,7 +30,7 @@ impl PositionUuid {
 }
 
 impl FromStr for PositionUuid {
-    type Err = PositionValueError;
+    type Err = PositionDomainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id = Uuid::parse_str(s)?;
@@ -123,9 +123,10 @@ impl AppliedOn {
         self.applied_on.to_string()
     }
 
-    pub fn new(applied_on: &str) -> Result<Self, PositionValueError> {
-        let parsed_date = DateTime::parse_from_rfc2822(applied_on)
-            .map_err(|e| PositionValueError::InvalidDate(e.to_string()))?;
+    pub fn new(applied_on: &str) -> Result<Self, PositionDomainError> {
+        let parsed_date = DateTime::parse_from_rfc2822(applied_on).map_err(|e| {
+            PositionDomainError::Shared(SharedDomainError::InvalidDate(e.to_string()))
+        })?;
         Ok(AppliedOn {
             applied_on: parsed_date.date_naive(),
         })
@@ -212,7 +213,7 @@ pub enum PositionStatus {
 }
 
 impl FromStr for PositionStatus {
-    type Err = PositionValueError;
+    type Err = PositionDomainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -222,7 +223,7 @@ impl FromStr for PositionStatus {
             "OfferReceived" => Ok(PositionStatus::OfferReceived),
             "Rejected" => Ok(PositionStatus::Rejected),
             "Withdrawn" => Ok(PositionStatus::Withdrawn),
-            _ => Err(PositionValueError::InvalidStatus(s.to_string())),
+            _ => Err(PositionDomainError::InvalidStatus(s.to_string())),
         }
     }
 }
@@ -285,14 +286,13 @@ impl PositionBuilder {
         Self::default()
     }
 
-    pub fn with_uuid(mut self, uuid: &str) -> Result<Self, PositionValueError> {
+    pub fn with_uuid(mut self, uuid: &str) -> Result<Self, PositionDomainError> {
         self.id = PositionUuid::from_str(uuid)?;
         Ok(self)
     }
 
-    pub fn with_user_uuid(mut self, uuid: &str) -> Result<Self, PositionValueError> {
-        self.user_id = UserUuid::from_str(uuid)
-            .map_err(|e| PositionValueError::InvalidUserUuid(e.to_string()))?;
+    pub fn with_user_uuid(mut self, uuid: &str) -> Result<Self, PositionDomainError> {
+        self.user_id = UserUuid::from_str(uuid)?;
         Ok(self)
     }
 
@@ -311,7 +311,7 @@ impl PositionBuilder {
         self
     }
 
-    pub fn with_applied_on(mut self, applied_on: &str) -> Result<Self, PositionValueError> {
+    pub fn with_applied_on(mut self, applied_on: &str) -> Result<Self, PositionDomainError> {
         self.applied_on = AppliedOn::new(applied_on)?;
         Ok(self)
     }
@@ -411,7 +411,12 @@ mod tests {
         let id = "123";
         let result = PositionUuid::from_str(id);
 
-        assert!(matches!(result, Err(PositionValueError::InvalidUuid(_))));
+        assert!(matches!(
+            result,
+            Err(PositionDomainError::Shared(SharedDomainError::InvalidUuid(
+                _
+            )))
+        ));
     }
 
     #[test]
@@ -419,7 +424,12 @@ mod tests {
         let date = "23-1-2026";
         let result = AppliedOn::new(date);
 
-        assert!(matches!(result, Err(PositionValueError::InvalidDate(_))));
+        assert!(matches!(
+            result,
+            Err(PositionDomainError::Shared(SharedDomainError::InvalidDate(
+                _
+            )))
+        ));
     }
 
     #[test]

@@ -8,7 +8,7 @@ use crate::{
             AppliedOn, Company, Description, InitialComment, Position, PositionStatus,
             PositionUuid, RoleTitle, Url,
         },
-        presentation::errors::PositionPresentationError,
+        presentation::errors::PositionApiError,
     },
     shared::domain::value_objects::UserUuid,
 };
@@ -56,7 +56,7 @@ pub struct PositionUuidDto {
 }
 
 impl TryFrom<PositionUuidDto> for PositionUuid {
-    type Error = PositionPresentationError;
+    type Error = PositionApiError;
 
     fn try_from(val: PositionUuidDto) -> Result<Self, Self::Error> {
         Ok(PositionUuid::from_str(&val.id)?)
@@ -84,7 +84,7 @@ pub struct SavePositionRequestDto {
 }
 
 impl SavePositionRequestDto {
-    pub fn to_new_position(&self) -> Result<Position, PositionPresentationError> {
+    pub fn to_new_position(&self) -> Result<Position, PositionApiError> {
         let position = Position {
             id: PositionUuid::new(),
             user_id: UserUuid::from_str(&self.user_id)?,

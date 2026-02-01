@@ -3,11 +3,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::positions::domain::entities::{
-    position::{Position, PositionUuid},
-    position_error::PositionRepositoryError,
+use crate::positions::domain::{
+    entities::position::{Position, PositionUuid},
+    errors::PositionRepoError,
+    repositories::position_repository::IPositionRepository,
 };
-use crate::positions::domain::repositories::position_repository::IPositionRepository;
 
 #[derive(Clone)]
 pub struct PositionInMemoryRepository {
@@ -24,10 +24,7 @@ impl Default for PositionInMemoryRepository {
 
 #[async_trait]
 impl IPositionRepository for PositionInMemoryRepository {
-    async fn get(
-        &self,
-        position_id: PositionUuid,
-    ) -> Result<Option<Position>, PositionRepositoryError> {
+    async fn get(&self, position_id: PositionUuid) -> Result<Option<Position>, PositionRepoError> {
         Ok(self
             .positions
             .read()
@@ -37,11 +34,11 @@ impl IPositionRepository for PositionInMemoryRepository {
             .cloned())
     }
 
-    async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError> {
+    async fn get_all(&self) -> Result<Vec<Position>, PositionRepoError> {
         Ok(self.positions.read().await.clone())
     }
 
-    async fn remove(&self, position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
+    async fn remove(&self, position_uuid: PositionUuid) -> Result<(), PositionRepoError> {
         if let Some(position) = self
             .positions
             .write()
@@ -55,7 +52,7 @@ impl IPositionRepository for PositionInMemoryRepository {
         Ok(())
     }
 
-    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
+    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepoError> {
         let uuid = position.id;
         self.positions.write().await.push(position);
         Ok(uuid)

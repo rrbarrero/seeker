@@ -1,18 +1,20 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 use thiserror::Error;
 
-use crate::positions::domain::entities::position_error::{
-    PositionServiceError, PositionValueError,
+use crate::positions::{
+    application::errors::PositionServiceError, domain::errors::PositionDomainError,
 };
 use crate::{
-    positions::domain::entities::position::PositionUuid, shared::domain::error::UserValueError,
+    auth::domain::errors::AuthDomainError, positions::domain::entities::position::PositionUuid,
+    shared::domain::errors::SharedDomainError, shared::presentation::ApiErrorResponse,
 };
 
 #[derive(Error, Debug)]
-pub enum PositionPresentationError {
+pub enum PositionApiError {
     #[error("Service error: `{0}`")]
     ServiceError(#[from] PositionServiceError),
 
@@ -20,27 +22,28 @@ pub enum PositionPresentationError {
     PositionNotFound(PositionUuid),
 
     #[error("Invalid user uuid: `{0}`")]
-    UserValueError(#[from] UserValueError),
+    AuthDomainError(#[from] AuthDomainError),
 
     #[error("Invalid position value: `{0}`")]
-    PositionValueError(#[from] PositionValueError),
+    PositionDomainError(#[from] PositionDomainError),
+
+    #[error("Domain error: `{0}`")]
+    SharedDomainError(#[from] SharedDomainError),
 }
 
-impl IntoResponse for PositionPresentationError {
+impl IntoResponse for PositionApiError {
     fn into_response(self) -> Response {
-        match self {
-            PositionPresentationError::ServiceError(error) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response()
-            }
-            PositionPresentationError::PositionNotFound(position_uuid) => {
-                (StatusCode::NOT_FOUND, position_uuid.to_string()).into_response()
-            }
-            PositionPresentationError::UserValueError(user_uuid) => {
-                (StatusCode::BAD_REQUEST, user_uuid.to_string()).into_response()
-            }
-            PositionPresentationError::PositionValueError(position_uuid) => {
-                (StatusCode::BAD_REQUEST, position_uuid.to_string()).into_response()
-            }
-        }
+        let (status, message) = match self {
+            PositionApiError::ServiceError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            PositionApiError::PositionNotFound(uuid) => (
+                StatusCode::NOT_FOUND,
+                format!("Position not found: {}", uuid),
+            ),
+            PositionApiError::AuthDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
+            PositionApiError::PositionDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
+            PositionApiError::SharedDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
+        };
+
+        (status, Json(ApiErrorResponse { message })).into_response()
     }
 }

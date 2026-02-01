@@ -6,10 +6,8 @@ use sqlx::postgres::PgPool;
 use uuid::Uuid;
 
 use crate::positions::domain::{
-    entities::{
-        position::{Position, PositionBuilder, PositionStatus, PositionUuid},
-        position_error::{PositionRepositoryError, PositionValueError},
-    },
+    entities::position::{Position, PositionBuilder, PositionStatus, PositionUuid},
+    errors::{PositionDomainError, PositionRepoError},
     repositories::position_repository::IPositionRepository,
 };
 
@@ -38,7 +36,7 @@ impl PositionPostgresRepository {
         Self { pool }
     }
 
-    fn from_row(row: PositionRow) -> Result<Position, PositionValueError> {
+    fn from_row(row: PositionRow) -> Result<Position, PositionDomainError> {
         Ok(PositionBuilder::new()
             .with_uuid(&row.id.to_string())?
             .with_user_uuid(&row.user_id.to_string())?
@@ -66,7 +64,7 @@ impl PositionPostgresRepository {
 
 #[async_trait]
 impl IPositionRepository for PositionPostgresRepository {
-    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepositoryError> {
+    async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepoError> {
         sqlx::query!(
             "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
             position.id.value(),
@@ -85,15 +83,12 @@ impl IPositionRepository for PositionPostgresRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| PositionRepositoryError::DatabaseError(e.to_string()))?;
+        .map_err(|e| PositionRepoError::DatabaseError(e.to_string()))?;
 
         Ok(position.id)
     }
 
-    async fn get(
-        &self,
-        _position_id: PositionUuid,
-    ) -> Result<Option<Position>, PositionRepositoryError> {
+    async fn get(&self, _position_id: PositionUuid) -> Result<Option<Position>, PositionRepoError> {
         let result = sqlx::query_as!(
             PositionRow,
             "SELECT * FROM positions WHERE id = $1",
@@ -105,11 +100,11 @@ impl IPositionRepository for PositionPostgresRepository {
         match result {
             Ok(Some(row)) => Self::from_row(row).map(Some).map_err(Into::into),
             Ok(None) => Ok(None),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
+            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
         }
     }
 
-    async fn get_all(&self) -> Result<Vec<Position>, PositionRepositoryError> {
+    async fn get_all(&self) -> Result<Vec<Position>, PositionRepoError> {
         let result = sqlx::query_as!(PositionRow, "SELECT * FROM positions")
             .fetch_all(&self.pool)
             .await;
@@ -120,11 +115,11 @@ impl IPositionRepository for PositionPostgresRepository {
                 .map(Self::from_row)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(Into::into),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
+            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
         }
     }
 
-    async fn remove(&self, _position_uuid: PositionUuid) -> Result<(), PositionRepositoryError> {
+    async fn remove(&self, _position_uuid: PositionUuid) -> Result<(), PositionRepoError> {
         let result = sqlx::query!(
             "UPDATE positions SET deleted = true, deleted_at = NOW() WHERE id = $1",
             _position_uuid.value()
@@ -134,7 +129,7 @@ impl IPositionRepository for PositionPostgresRepository {
 
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(PositionRepositoryError::DatabaseError(e.to_string())),
+            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
         }
     }
 }

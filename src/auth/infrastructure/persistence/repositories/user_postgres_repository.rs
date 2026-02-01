@@ -4,11 +4,12 @@ use crate::{
     auth::{
         domain::{
             entities::user::{User, UserEmail},
+            errors::AuthRepoError,
             repositories::user_repository::IUserRepository,
         },
         infrastructure::persistence::repositories::dtos::UserDto,
     },
-    shared::domain::{error::AuthRepositoryError, value_objects::UserUuid},
+    shared::domain::value_objects::UserUuid,
 };
 
 pub struct UserPostgresRepository {
@@ -23,7 +24,7 @@ impl UserPostgresRepository {
 
 #[async_trait]
 impl IUserRepository for UserPostgresRepository {
-    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepositoryError> {
+    async fn save(&self, user: &User) -> Result<UserUuid, AuthRepoError> {
         sqlx::query!(
             "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
             user.id.value(),
@@ -43,16 +44,16 @@ impl IUserRepository for UserPostgresRepository {
         .map_err(|e| {
             match &e {
                 sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
-                    return AuthRepositoryError::UserAlreadyExists;
+                    return AuthRepoError::UserAlreadyExists(user.email.value().to_string());
                 }
                 _ => {}
             }
-            AuthRepositoryError::DatabaseError(e.to_string())
+            AuthRepoError::DatabaseError(e.to_string())
         })?;
 
         Ok(user.id)
     }
-    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepositoryError> {
+    async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepoError> {
         let result = sqlx::query("SELECT * FROM users WHERE id = $1")
             .bind(user_id.value())
             .fetch_optional(&self.pool)
@@ -62,12 +63,12 @@ impl IUserRepository for UserPostgresRepository {
             Ok(Some(row)) => UserDto::from_row(&row)
                 .to_domain()
                 .map(Some)
-                .map_err(AuthRepositoryError::from),
+                .map_err(AuthRepoError::from),
             Ok(None) => Ok(None),
-            Err(e) => Err(AuthRepositoryError::DatabaseError(e.to_string())),
+            Err(e) => Err(AuthRepoError::DatabaseError(e.to_string())),
         }
     }
-    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepositoryError> {
+    async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepoError> {
         let result = sqlx::query("SELECT * FROM users WHERE email = $1")
             .bind(email.value())
             .fetch_optional(&self.pool)
@@ -77,9 +78,9 @@ impl IUserRepository for UserPostgresRepository {
             Ok(Some(row)) => UserDto::from_row(&row)
                 .to_domain()
                 .map(Some)
-                .map_err(AuthRepositoryError::from),
+                .map_err(AuthRepoError::from),
             Ok(None) => Ok(None),
-            Err(e) => Err(AuthRepositoryError::DatabaseError(e.to_string())),
+            Err(e) => Err(AuthRepoError::DatabaseError(e.to_string())),
         }
     }
 }

@@ -5,7 +5,7 @@ use rand::rngs::OsRng;
 use uuid::Uuid;
 use zxcvbn::{Score, zxcvbn};
 
-use crate::shared::domain::error::UserValueError;
+use crate::shared::domain::errors::SharedDomainError;
 
 #[derive(PartialEq, Clone, Debug, Copy)]
 pub struct UserUuid {
@@ -29,7 +29,7 @@ impl UserUuid {
 }
 
 impl FromStr for UserUuid {
-    type Err = UserValueError;
+    type Err = SharedDomainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id = Uuid::parse_str(s)?;
@@ -59,23 +59,23 @@ impl UserPassword {
         }
     }
 
-    pub fn new(password: &str) -> Result<Self, UserValueError> {
+    pub fn new(password: &str) -> Result<Self, SharedDomainError> {
         (zxcvbn(password, &[]).score() >= Score::Three)
             .then(|| {
                 let hashed = Self::hash_password(password)?;
                 Ok(Self { password: hashed })
             })
-            .ok_or_else(|| UserValueError::InvalidPassword(password.to_string()))?
+            .ok_or_else(|| SharedDomainError::InvalidPassword(password.to_string()))?
     }
 
-    pub fn hash_password(password: &str) -> Result<String, UserValueError> {
+    pub fn hash_password(password: &str) -> Result<String, SharedDomainError> {
         let salt = SaltString::generate(&mut OsRng);
 
         let argon2 = Argon2::default();
 
         let password_hash = argon2
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| UserValueError::ErrorHashingPassword(e.to_string()))?
+            .map_err(|e| SharedDomainError::ErrorHashingPassword(e.to_string()))?
             .to_string();
 
         Ok(password_hash)
