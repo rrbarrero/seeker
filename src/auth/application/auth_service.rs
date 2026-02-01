@@ -1,6 +1,9 @@
-use crate::auth::{
-    domain::{entities::user::UserEmail, repositories::user_repository::IUserRepository},
-    infrastructure::http::errors::AuthError,
+use crate::auth::domain::{
+    entities::{
+        errors::AuthError,
+        user::{User, UserEmail},
+    },
+    repositories::user_repository::IUserRepository,
 };
 
 pub struct AuthService {
@@ -12,12 +15,12 @@ impl AuthService {
         Self { user_repository }
     }
 
-    pub async fn login(&self, email: &str, password: &str) -> Result<String, AuthError> {
+    pub async fn login(&self, email: &str, password: &str) -> Result<User, AuthError> {
         let user_email: UserEmail = UserEmail::new(email).map_err(|_| AuthError::InvalidEmail)?;
         let user = self.user_repository.find_by_email(user_email).await;
         match user {
             Ok(Some(user)) => match user.verify_password(password) {
-                Ok(true) => Ok(user.id.to_string()),
+                Ok(true) => Ok(user),
                 Ok(false) => Err(AuthError::InvalidPassword),
                 Err(_) => Err(AuthError::InternalServerError),
             },
@@ -51,7 +54,7 @@ mod tests {
         let result = auth_service
             .login("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
             .await;
-        assert_eq!(result, Ok(user_id.to_string()));
+        assert_eq!(result, Ok(user));
     }
 
     #[tokio::test]

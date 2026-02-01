@@ -1,3 +1,5 @@
+use crate::auth::application::auth_service::AuthService;
+use crate::auth::domain::repositories::user_repository::IUserRepository;
 use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::positions::application::position_service::PositionService;
 use crate::positions::domain::repositories::position_repository::IPositionRepository;
@@ -23,4 +25,8 @@ pub async fn create_user_postgres_repository(
 
 pub async fn create_position_service(repo: Box<dyn IPositionRepository>) -> PositionService {
     PositionService::new(repo)
+}
+
+pub async fn create_auth_service(repo: Box<dyn IUserRepository>) -> AuthService {
+    AuthService::new(repo)
 }

@@ -66,6 +66,15 @@ impl Config {
     pub fn jwt_secret(&self) -> EncodingKey {
         EncodingKey::from_secret(self.jwt_secret.as_bytes())
     }
+
+    #[cfg(test)]
+    pub fn test_default() -> Self {
+        Self {
+            postgres_url: "postgres://postgres:postgres@db:5432/testdb".to_string(),
+            environment: Environment::Testing,
+            jwt_secret: "secret".to_string(),
+        }
+    }
 }
 
 #[cfg(test)]

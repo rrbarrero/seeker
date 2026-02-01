@@ -10,7 +10,7 @@ use crate::positions::{
     presentation::handlers::{get_position, get_positions, remove_position, save_position},
 };
 
-pub fn position_routes(service: Arc<PositionService>) -> Router {
+pub fn create_position_routes(service: Arc<PositionService>) -> Router {
     Router::new()
         .route("/", get(get_positions))
         .route("/{id}", get(get_position))
@@ -38,7 +38,7 @@ mod tests {
     fn setup_router() -> Router {
         let repo = PositionInMemoryRepository::default();
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        position_routes(service)
+        create_position_routes(service)
     }
 
     #[tokio::test]
@@ -102,7 +102,7 @@ mod tests {
 
         let _ = repo.save(position.clone()).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        let app = position_routes(service);
+        let app = create_position_routes(service);
 
         let uri = format!("/{}", id);
         let response = app
@@ -121,7 +121,7 @@ mod tests {
 
         let _ = repo.save(position).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        let app = position_routes(service);
+        let app = create_position_routes(service);
 
         let uri = format!("/{}", id);
         let response = app

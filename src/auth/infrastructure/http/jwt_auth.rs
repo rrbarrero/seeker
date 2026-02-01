@@ -3,7 +3,7 @@ use jsonwebtoken::Header;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::{domain::entities::user::User, infrastructure::http::errors::AuthError},
+    auth::domain::entities::{errors::AuthError, user::User},
     shared::config::Config,
 };
 
