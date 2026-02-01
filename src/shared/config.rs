@@ -1,3 +1,4 @@
+use jsonwebtoken::EncodingKey;
 use std::env;
 use thiserror::Error;
 
@@ -16,6 +17,7 @@ pub enum Environment {
 pub struct Config {
     pub postgres_url: String,
     pub environment: Environment,
+    jwt_secret: String,
 }
 
 impl Default for Config {
@@ -36,9 +38,14 @@ impl Default for Config {
             Environment::Production => Self::build_production_database_url(),
         };
 
+        if environment != Environment::Testing && env::var("JWT_SECRET").is_err() {
+            panic!("JWT_SECRET is not set");
+        }
+
         Config {
             postgres_url,
             environment,
+            jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "secret".to_string()),
         }
     }
 }
@@ -54,6 +61,10 @@ impl Config {
 
             format!("postgres://{user}:{password}@{host}:{port}/{db}")
         })
+    }
+
+    pub fn jwt_secret(&self) -> EncodingKey {
+        EncodingKey::from_secret(self.jwt_secret.as_bytes())
     }
 }
 
@@ -77,9 +88,19 @@ mod tests {
     #[test]
     fn test_config_load_production_default() {
         // Ensure ENVIRONMENT is unset or set to something else
+        temp_env::with_var("JWT_SECRET", Some("secret"), || {
+            temp_env::with_var_unset("ENVIRONMENT", || {
+                let config = Config::default();
+                assert_eq!(config.environment, Environment::Production);
+            });
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "JWT_SECRET is not set")]
+    fn test_config_load_production_no_jwt_secret() {
         temp_env::with_var_unset("ENVIRONMENT", || {
-            let config = Config::default();
-            assert_eq!(config.environment, Environment::Production);
+            let _ = Config::default();
         });
     }
 }
