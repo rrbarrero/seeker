@@ -1,4 +1,3 @@
-use jsonwebtoken::EncodingKey;
 use std::env;
 use thiserror::Error;
 
@@ -13,11 +12,12 @@ pub enum Environment {
     Production,
     Testing,
 }
-
+#[derive(Debug, Clone)]
 pub struct Config {
     pub postgres_url: String,
     pub environment: Environment,
     jwt_secret: String,
+    pub jwt_expiration_time: i64,
 }
 
 impl Default for Config {
@@ -46,6 +46,10 @@ impl Default for Config {
             postgres_url,
             environment,
             jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "secret".to_string()),
+            jwt_expiration_time: env::var("JWT_EXPIRATION_TIME")
+                .unwrap_or_else(|_| "10800".to_string())
+                .parse()
+                .unwrap_or(60 * 60 * 3),
         }
     }
 }
@@ -63,8 +67,8 @@ impl Config {
         })
     }
 
-    pub fn jwt_secret(&self) -> EncodingKey {
-        EncodingKey::from_secret(self.jwt_secret.as_bytes())
+    pub fn get_jwt_secret(&self) -> String {
+        self.jwt_secret.clone()
     }
 
     #[cfg(test)]
@@ -73,6 +77,7 @@ impl Config {
             postgres_url: "postgres://postgres:postgres@db:5432/testdb".to_string(),
             environment: Environment::Testing,
             jwt_secret: "secret".to_string(),
+            jwt_expiration_time: 60 * 60 * 3,
         }
     }
 }
