@@ -10,8 +10,22 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev
 RUN cargo install sqlx-cli --no-default-features --features postgres && \
     rustup component add rustfmt clippy
 
-# Copy the source code
+# 1. Pre-build dependencies to cache them
+# Copy only the dependency definitions
+COPY Cargo.toml Cargo.lock ./
+
+# Create a dummy main.rs to allow cargo to build dependencies
+RUN mkdir src && \
+    echo "fn main() {println!(\"dummy\")}" > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+# 2. Build the actual application
+# Copy the source code and other necessary files
 COPY . .
+
+# Touch the main file to ensure it gets rebuilt
+RUN touch src/main.rs
 
 # Build the application
 ENV SQLX_OFFLINE=true

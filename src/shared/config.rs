@@ -16,6 +16,8 @@ pub enum Environment {
 pub struct Config {
     pub postgres_url: String,
     pub environment: Environment,
+    pub server_host: String,
+    pub server_port: u16,
     jwt_secret: String,
     pub jwt_expiration_time: i64,
 }
@@ -45,6 +47,11 @@ impl Default for Config {
         Config {
             postgres_url,
             environment,
+            server_host: env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
+            server_port: env::var("SERVER_PORT")
+                .unwrap_or_else(|_| "3000".to_string())
+                .parse()
+                .unwrap_or(3000),
             jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "secret".to_string()),
             jwt_expiration_time: env::var("JWT_EXPIRATION_TIME")
                 .unwrap_or_else(|_| "10800".to_string())
@@ -76,6 +83,8 @@ impl Config {
         Self {
             postgres_url: "postgres://postgres:postgres@db:5432/testdb".to_string(),
             environment: Environment::Testing,
+            server_host: "127.0.0.1".to_string(),
+            server_port: 3000,
             jwt_secret: "secret".to_string(),
             jwt_expiration_time: 60 * 60 * 3,
         }

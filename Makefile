@@ -18,3 +18,15 @@ lint:
 
 check:
 	docker compose run --rm test /bin/bash -c "cargo check && cargo clippy --all-targets --all-features -- -D warnings && chmod +x scripts/ddd-fitness-test.sh && ./scripts/ddd-fitness-test.sh && cargo test -- --test-threads=6"
+
+run:
+	docker compose up --build
+
+stop:
+	docker compose stop
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f

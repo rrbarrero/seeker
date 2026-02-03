@@ -1,0 +1,11 @@
+target/
+.git/
+.agent/
+.github/
+.vscode/
+.ignored-folder/
+.env
+Dockerfile
+docker-compose.yml
+docker/
+README.md
