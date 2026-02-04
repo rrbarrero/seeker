@@ -10,6 +10,7 @@ pub mod shared;
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
     let config = Arc::new(shared::config::Config::default());
     let pool = composition_root::get_or_create_postgres_pool(&config).await;
     let user_repo = Box::new(composition_root::create_user_postgres_repository(pool.clone()).await);

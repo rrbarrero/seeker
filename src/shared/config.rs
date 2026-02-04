@@ -24,8 +24,6 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Config {
-        dotenvy::dotenv().ok();
-
         let environment = match env::var("ENVIRONMENT")
             .unwrap_or_else(|_| "production".to_string())
             .to_lowercase()
@@ -121,9 +119,11 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "JWT_SECRET is not set")]
-    fn test_config_load_production_no_jwt_secret() {
-        temp_env::with_var_unset("ENVIRONMENT", || {
-            let _ = Config::default();
-        });
+    fn test_should_panic_when_jwt_secret_is_not_set_and_env_is_production() {
+        temp_env::with_var_unset("JWT_SECRET", || {
+            temp_env::with_var_unset("ENVIRONMENT", || {
+                let _ = Config::default();
+            });
+        })
     }
 }
