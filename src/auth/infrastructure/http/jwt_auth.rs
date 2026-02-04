@@ -11,6 +11,7 @@ use crate::{
 struct Claims {
     sub: String,
     exp: usize,
+    email: String,
 }
 
 pub fn create_jwt(user: &User, config: &Config) -> Result<String, AuthError> {
@@ -19,6 +20,7 @@ pub fn create_jwt(user: &User, config: &Config) -> Result<String, AuthError> {
     let claims = Claims {
         sub: user.id.value().to_string(),
         exp: experiation as usize,
+        email: user.email.value().to_string(),
     };
 
     let token = jsonwebtoken::encode(&Header::default(), &claims, &get_encoding_key(config));
