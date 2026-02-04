@@ -9,8 +9,8 @@ use crate::positions::{
     application::errors::PositionServiceError, domain::errors::PositionDomainError,
 };
 use crate::{
-    auth::domain::errors::AuthDomainError, positions::domain::entities::position::PositionUuid,
-    shared::domain::errors::SharedDomainError, shared::presentation::ApiErrorResponse,
+    positions::domain::entities::position::PositionUuid, shared::domain::errors::SharedDomainError,
+    shared::presentation::ApiErrorResponse,
 };
 
 #[derive(Error, Debug)]
@@ -20,9 +20,6 @@ pub enum PositionApiError {
 
     #[error("Position not found: `{0}`")]
     PositionNotFound(PositionUuid),
-
-    #[error("Invalid user uuid: `{0}`")]
-    AuthDomainError(#[from] AuthDomainError),
 
     #[error("Invalid position value: `{0}`")]
     PositionDomainError(#[from] PositionDomainError),
@@ -39,7 +36,6 @@ impl IntoResponse for PositionApiError {
                 StatusCode::NOT_FOUND,
                 format!("Position not found: {}", uuid),
             ),
-            PositionApiError::AuthDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             PositionApiError::PositionDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             PositionApiError::SharedDomainError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
         };

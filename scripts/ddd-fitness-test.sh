@@ -47,8 +47,8 @@ for BC in $BCS; do
         check_violation \
             "Cross-Context Leakage" \
             "src/$BC" \
-            "use crate::$OTHER" \
-            "Context '$BC' cannot import directly from '$OTHER'. Use 'shared' or events."
+            "(\b$OTHER::|crate::$OTHER\b)" \
+            "Context '$BC' cannot reference or import directly from '$OTHER'. Use 'shared' or events."
     done
 done
 
