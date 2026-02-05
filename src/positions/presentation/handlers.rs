@@ -1,12 +1,13 @@
-use std::sync::Arc;
-
-use crate::positions::{
-    application::position_service::PositionService,
-    domain::entities::position::PositionUuid,
-    presentation::{
-        dtos::{PositionResponseDto, PositionUuidDto, SavePositionRequestDto},
-        errors::PositionApiError,
+use crate::{
+    positions::{
+        domain::entities::position::PositionUuid,
+        presentation::{
+            dtos::{PositionResponseDto, PositionUuidDto, SavePositionRequestDto},
+            errors::PositionApiError,
+            routes::PositionState,
+        },
     },
+    shared::infrastructure::http::auth_extractor::AuthenticatedUser,
 };
 use axum::{
     Json,
@@ -15,19 +16,21 @@ use axum::{
 };
 
 pub async fn get_positions(
-    State(service): State<Arc<PositionService>>,
+    _user: AuthenticatedUser,
+    State(state): State<PositionState>,
 ) -> Result<Json<Vec<PositionResponseDto>>, PositionApiError> {
-    let positions = service.get_positions().await?;
+    let positions = state.service.get_positions().await?;
     let positions_dto = positions.iter().map(PositionResponseDto::from).collect();
     Ok(Json(positions_dto))
 }
 
 pub async fn get_position(
-    State(service): State<Arc<PositionService>>,
+    _user: AuthenticatedUser,
+    State(state): State<PositionState>,
     Path(position_id): Path<PositionUuidDto>,
 ) -> Result<Json<PositionResponseDto>, PositionApiError> {
     let id: PositionUuid = position_id.try_into()?;
-    let position = service.get_position(id).await?;
+    let position = state.service.get_position(id).await?;
     match position {
         Some(position) => Ok(Json(PositionResponseDto::from(&position))),
         None => Err(PositionApiError::PositionNotFound(id)),
@@ -35,17 +38,19 @@ pub async fn get_position(
 }
 
 pub async fn save_position(
-    State(service): State<Arc<PositionService>>,
+    _user: AuthenticatedUser,
+    State(state): State<PositionState>,
     Json(payload): Json<SavePositionRequestDto>,
 ) -> Result<Json<PositionUuidDto>, PositionApiError> {
-    let position_uuid = service.save(payload.to_new_position()?).await?;
+    let position_uuid = state.service.save(payload.to_new_position()?).await?;
     Ok(Json(position_uuid.into()))
 }
 
 pub async fn remove_position(
-    State(service): State<Arc<PositionService>>,
+    _user: AuthenticatedUser,
+    State(state): State<PositionState>,
     Path(position_id): Path<PositionUuidDto>,
 ) -> Result<StatusCode, PositionApiError> {
-    service.remove(position_id.try_into()?).await?;
+    state.service.remove(position_id.try_into()?).await?;
     Ok(StatusCode::NO_CONTENT)
 }

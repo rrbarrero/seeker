@@ -21,7 +21,10 @@ async fn main() {
     let app = Router::new()
         .nest(
             "/positions",
-            positions::presentation::routes::create_position_routes(Arc::new(position_service)),
+            positions::presentation::routes::create_position_routes(
+                Arc::new(position_service),
+                config.clone(),
+            ),
         )
         .nest(
             "/auth",

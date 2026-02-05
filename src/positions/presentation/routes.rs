@@ -2,21 +2,44 @@ use std::sync::Arc;
 
 use axum::{
     Router,
+    extract::FromRef,
     routing::{delete, get, post},
 };
 
-use crate::positions::{
-    application::position_service::PositionService,
-    presentation::handlers::{get_position, get_positions, remove_position, save_position},
+use crate::{
+    positions::{
+        application::position_service::PositionService,
+        presentation::handlers::{get_position, get_positions, remove_position, save_position},
+    },
+    shared::config::Config,
 };
 
-pub fn create_position_routes(service: Arc<PositionService>) -> Router {
+#[derive(Clone)]
+pub struct PositionState {
+    pub service: Arc<PositionService>,
+    pub config: Arc<Config>,
+}
+
+impl FromRef<PositionState> for Arc<PositionService> {
+    fn from_ref(state: &PositionState) -> Self {
+        state.service.clone()
+    }
+}
+
+impl FromRef<PositionState> for Arc<Config> {
+    fn from_ref(state: &PositionState) -> Self {
+        state.config.clone()
+    }
+}
+
+pub fn create_position_routes(service: Arc<PositionService>, config: Arc<Config>) -> Router {
+    let state = PositionState { service, config };
     Router::new()
         .route("/", get(get_positions))
         .route("/{id}", get(get_position))
         .route("/", post(save_position))
         .route("/{id}", delete(remove_position))
-        .with_state(service)
+        .with_state(state)
 }
 
 #[cfg(test)]
@@ -35,18 +58,35 @@ mod tests {
     use uuid::Uuid;
 
     // Helper to setup the router with an in-memory repository
-    fn setup_router() -> Router {
+    fn setup_router() -> (Router, Arc<Config>) {
         let repo = PositionInMemoryRepository::default();
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        create_position_routes(service)
+        let config = Arc::new(Config::test_default());
+        (create_position_routes(service, config.clone()), config)
+    }
+
+    fn get_auth_header(config: &Config) -> String {
+        let token = crate::shared::infrastructure::http::auth_extractor::create_jwt(
+            &Uuid::new_v4().to_string(),
+            "test@example.com",
+            config,
+        )
+        .unwrap();
+        format!("Bearer {}", token)
     }
 
     #[tokio::test]
     async fn test_get_positions_empty() {
-        let app = setup_router();
+        let (app, config) = setup_router();
 
         let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header("Authorization", get_auth_header(&config))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -60,7 +100,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_save_position() {
-        let app = setup_router();
+        let (app, config) = setup_router();
 
         let user_id = Uuid::new_v4();
 
@@ -85,6 +125,7 @@ mod tests {
                     .method("POST")
                     .uri("/")
                     .header("content-type", "application/json")
+                    .header("Authorization", get_auth_header(&config))
                     .body(Body::from(body_json))
                     .unwrap(),
             )
@@ -102,11 +143,18 @@ mod tests {
 
         let _ = repo.save(position.clone()).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        let app = create_position_routes(service);
+        let config = Arc::new(Config::test_default());
+        let app = create_position_routes(service, config.clone());
 
         let uri = format!("/{}", id);
         let response = app
-            .oneshot(Request::builder().uri(&uri).body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri(&uri)
+                    .header("Authorization", get_auth_header(&config))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -121,7 +169,8 @@ mod tests {
 
         let _ = repo.save(position).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
-        let app = create_position_routes(service);
+        let config = Arc::new(Config::test_default());
+        let app = create_position_routes(service, config.clone());
 
         let uri = format!("/{}", id);
         let response = app
@@ -129,6 +178,7 @@ mod tests {
                 Request::builder()
                     .method("DELETE")
                     .uri(&uri)
+                    .header("Authorization", get_auth_header(&config))
                     .body(Body::empty())
                     .unwrap(),
             )
