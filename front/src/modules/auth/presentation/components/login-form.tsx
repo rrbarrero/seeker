@@ -43,12 +43,12 @@ export function LoginForm() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      await authService.login(data);
+      const result = await authService.login(data);
+      localStorage.setItem("token", result.access_token);
       toast.success("Login successful", {
         description: "Welcome back!",
       });
-      // Store token if needed, or redirect
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       toast.error("Login failed", {
         description: "Please check your email and password.",
