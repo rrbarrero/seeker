@@ -32,6 +32,13 @@ pub async fn create_position_service(repo: Box<dyn IPositionRepository>) -> Posi
     PositionService::new(repo)
 }
 
-pub async fn create_auth_service(repo: Box<dyn IUserRepository>) -> AuthService {
-    AuthService::new(repo)
+use crate::auth::infrastructure::services::jwt_token_generator::JwtTokenGenerator;
+use std::sync::Arc;
+
+pub async fn create_auth_service(
+    repo: Box<dyn IUserRepository>,
+    config: Arc<Config>,
+) -> AuthService {
+    let token_generator = Box::new(JwtTokenGenerator::new(config));
+    AuthService::new(repo, token_generator)
 }
