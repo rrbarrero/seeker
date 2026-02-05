@@ -13,6 +13,16 @@ use crate::{
     shared::{config::Config, infrastructure::http::auth_extractor::create_jwt},
 };
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    request_body = LoginDto,
+    responses(
+        (status = 200, description = "Login successful", body = SuccesfullLoginDto),
+        (status = 401, description = "Invalid credentials")
+    ),
+    tag = "Auth"
+)]
 pub async fn login(
     State(service): State<Arc<AuthService>>,
     State(config): State<Arc<Config>>,

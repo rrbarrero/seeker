@@ -12,8 +12,9 @@ use crate::{
     },
     shared::domain::value_objects::UserUuid,
 };
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct PositionResponseDto {
     pub id: String,
     pub user_id: String,
@@ -50,7 +51,7 @@ impl From<&Position> for PositionResponseDto {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct PositionUuidDto {
     id: String,
 }
@@ -71,7 +72,7 @@ impl From<PositionUuid> for PositionUuidDto {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct SavePositionRequestDto {
     pub user_id: String,
     pub company: String,

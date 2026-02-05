@@ -1,3 +1,5 @@
+pub mod openapi;
+
 use serde::Serialize;
 
 #[derive(Serialize)]

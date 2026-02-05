@@ -19,6 +19,8 @@ serde = "1.0.228"
 serde_json = "1.0.149"
 axum = "0.8.8"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+utoipa = { version = "5.3.0", features = ["axum_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "9.0.0", features = ["axum", "reqwest"] }
 
 [dev-dependencies]
 http-body-util = "0.1.3"

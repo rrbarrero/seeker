@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use utoipa::OpenApi;
 
 use axum::Router;
 use tokio::net::TcpListener;
@@ -19,6 +20,10 @@ async fn main() {
     let position_service = composition_root::create_position_service(position_repo).await;
 
     let app = Router::new()
+        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url(
+            "/api-docs/openapi.json",
+            shared::presentation::openapi::ApiDoc::openapi(),
+        ))
         .nest(
             "/positions",
             positions::presentation::routes::create_position_routes(

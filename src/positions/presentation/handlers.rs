@@ -15,6 +15,18 @@ use axum::{
     http::StatusCode,
 };
 
+#[utoipa::path(
+    get,
+    path = "/positions",
+    responses(
+        (status = 200, description = "List all positions", body = [PositionResponseDto]),
+        (status = 401, description = "Unauthorized")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Positions"
+)]
 pub async fn get_positions(
     _user: AuthenticatedUser,
     State(state): State<PositionState>,
@@ -24,6 +36,22 @@ pub async fn get_positions(
     Ok(Json(positions_dto))
 }
 
+#[utoipa::path(
+    get,
+    path = "/positions/{id}",
+    params(
+        ("id" = String, Path, description = "Position ID")
+    ),
+    responses(
+        (status = 200, description = "Position found", body = PositionResponseDto),
+        (status = 404, description = "Position not found"),
+        (status = 401, description = "Unauthorized")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Positions"
+)]
 pub async fn get_position(
     _user: AuthenticatedUser,
     State(state): State<PositionState>,
@@ -37,6 +65,19 @@ pub async fn get_position(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/positions",
+    request_body = SavePositionRequestDto,
+    responses(
+        (status = 200, description = "Position saved", body = PositionUuidDto),
+        (status = 401, description = "Unauthorized")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Positions"
+)]
 pub async fn save_position(
     _user: AuthenticatedUser,
     State(state): State<PositionState>,
@@ -46,6 +87,22 @@ pub async fn save_position(
     Ok(Json(position_uuid.into()))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/positions/{id}",
+    params(
+        ("id" = String, Path, description = "Position ID")
+    ),
+    responses(
+        (status = 204, description = "Position removed"),
+        (status = 404, description = "Position not found"),
+        (status = 401, description = "Unauthorized")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Positions"
+)]
 pub async fn remove_position(
     _user: AuthenticatedUser,
     State(state): State<PositionState>,
