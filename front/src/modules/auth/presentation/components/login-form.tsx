@@ -24,34 +24,34 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { RegisterFormValues } from "../../domain/schema";
-import { registerSchema } from "../../domain/schema";
+import type { LoginFormValues } from "../../domain/schema";
+import { loginSchema } from "../../domain/schema";
 import { authService } from "../../composition-root";
 
-export function RegisterForm() {
+export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      confirmPassword: "",
     },
   });
 
-  async function onSubmit(data: RegisterFormValues) {
+  async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-      await authService.register(data);
-      toast.success("Account created successfully", {
-        description: "You can now log in with your credentials.",
+      await authService.login(data);
+      toast.success("Login successful", {
+        description: "Welcome back!",
       });
-      router.push("/auth/login");
+      // Store token if needed, or redirect
+      router.push("/");
     } catch (error) {
-      toast.error("Registration error", {
-        description: "There was a problem creating your account. Please try again.",
+      toast.error("Login failed", {
+        description: "Please check your email and password.",
       });
       console.error(error);
     } finally {
@@ -62,10 +62,8 @@ export function RegisterForm() {
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-center text-2xl font-bold">Create Account</CardTitle>
-        <CardDescription className="text-center">
-          Enter your details to register on Best Seeker
-        </CardDescription>
+        <CardTitle className="text-center text-2xl font-bold">Log In</CardTitle>
+        <CardDescription className="text-center">Welcome back to Best Seeker</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -96,30 +94,17 @@ export function RegisterForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Registering..." : "Register"}
+              {isLoading ? "Logging in..." : "Log In"}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-muted-foreground text-sm">
-          Already have an account?{" "}
-          <a href="/auth/login" className="text-primary hover:underline">
-            Log in
+          Don&apos;t have an account?{" "}
+          <a href="/auth/register" className="text-primary hover:underline">
+            Register
           </a>
         </p>
       </CardFooter>
