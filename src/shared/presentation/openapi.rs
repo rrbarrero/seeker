@@ -1,6 +1,6 @@
 use utoipa::{
-    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 
 use crate::auth::presentation::dtos::{LoginDto, SuccesfullLoginDto};
@@ -19,10 +19,10 @@ use crate::positions::presentation::dtos::{
     ),
     components(
         schemas(
-            LoginDto, 
-            SuccesfullLoginDto, 
-            PositionResponseDto, 
-            PositionUuidDto, 
+            LoginDto,
+            SuccesfullLoginDto,
+            PositionResponseDto,
+            PositionUuidDto,
             SavePositionRequestDto
         )
     ),
