@@ -1,7 +1,7 @@
 import type { RegisterFormValues } from "../domain/schema";
 
 export async function registerUser(data: RegisterFormValues): Promise<void> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/signup`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

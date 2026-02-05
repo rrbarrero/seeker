@@ -4,3 +4,4 @@ POSTGRES_DB=postgres
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 ENVIRONMENT=development
+CORS_ALLOWED_ORIGIN=http://localhost:3001

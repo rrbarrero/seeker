@@ -34,6 +34,25 @@ async fn main() {
         .nest(
             "/auth",
             auth::presentation::routes::create_auth_routes(Arc::new(auth_service), config.clone()),
+        )
+        .layer(
+            tower_http::cors::CorsLayer::new()
+                .allow_origin(
+                    config
+                        .allowed_origin
+                        .parse::<axum::http::HeaderValue>()
+                        .unwrap(),
+                )
+                .allow_headers([
+                    axum::http::header::CONTENT_TYPE,
+                    axum::http::header::AUTHORIZATION,
+                ])
+                .allow_methods([
+                    axum::http::Method::GET,
+                    axum::http::Method::POST,
+                    axum::http::Method::PUT,
+                    axum::http::Method::DELETE,
+                ]),
         );
 
     let addr = format!("{}:{}", config.server_host, config.server_port);

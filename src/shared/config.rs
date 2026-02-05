@@ -20,6 +20,7 @@ pub struct Config {
     pub server_port: u16,
     jwt_secret: String,
     pub jwt_expiration_time: i64,
+    pub allowed_origin: String,
 }
 
 impl Default for Config {
@@ -55,6 +56,8 @@ impl Default for Config {
                 .unwrap_or_else(|_| "10800".to_string())
                 .parse()
                 .unwrap_or(60 * 60 * 3),
+            allowed_origin: env::var("CORS_ALLOWED_ORIGIN")
+                .unwrap_or_else(|_| "http://localhost:3001".to_string()),
         }
     }
 }
@@ -85,6 +88,7 @@ impl Config {
             server_port: 3000,
             jwt_secret: "secret".to_string(),
             jwt_expiration_time: 60 * 60 * 3,
+            allowed_origin: "http://localhost:3001".to_string(),
         }
     }
 }

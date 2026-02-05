@@ -26,7 +26,10 @@ front-type-check:
 front-format:
 	cd front && pnpm format
 
-front-check: front-lint front-type-check front-test
+front-build:
+	cd front && pnpm build
+
+front-check: front-lint front-type-check front-test front-build
 
 # Global Targets
 test: test-rust front-test

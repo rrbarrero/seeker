@@ -15,10 +15,17 @@ pub async fn get_or_create_pool(config: &Config) -> PgPool {
     }
 
     POOL.get_or_init(|| async {
-        PgPoolOptions::new()
+        let pool = PgPoolOptions::new()
             .connect(&config.postgres_url)
             .await
-            .expect("Should create pool")
+            .expect("Should create pool");
+
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("Should run migrations");
+
+        pool
     })
     .await
     .clone()
