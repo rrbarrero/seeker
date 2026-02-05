@@ -36,6 +36,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -57,8 +59,13 @@ jobs:
       - name: Run migrations
         run: cargo sqlx migrate run
 
-      - name: Run tests
-        run: cargo test
+      - name: Cargo Check
+        run: cargo check
+
+      - name: Security audit
+        uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ github.token }}
 
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
@@ -67,3 +74,11 @@ jobs:
         run: |
           chmod +x scripts/ddd-fitness-test.sh
           ./scripts/ddd-fitness-test.sh
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Code coverage (Tarpaulin)
+        uses: xd009642/tarpaulin@v0.11.0
+        with:
+          args: "--fail-under 80 --out Xml"
