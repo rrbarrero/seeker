@@ -25,6 +25,23 @@ services:
       - "3000:3000"
     restart: on-failure
 
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: best-seeker-frontend
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+      - /app/.next
+    restart: on-failure
+
   test:
     build:
       context: .

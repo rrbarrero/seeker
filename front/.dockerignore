@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+build
+.eslintcache
+*.log
+.git
+.env*
+!.env.example
