@@ -45,6 +45,7 @@ export function LoginForm() {
     try {
       const result = await authService.login(data);
       localStorage.setItem("token", result.access_token);
+      document.cookie = `token=${result.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       toast.success("Login successful", {
         description: "Welcome back!",
       });
