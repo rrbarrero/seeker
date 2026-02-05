@@ -79,11 +79,8 @@ jobs:
           chmod +x scripts/ddd-fitness-test.sh
           ./scripts/ddd-fitness-test.sh
 
-      - name: Run tests
-        run: cargo test
-
       - name: Install Tarpaulin
         run: cargo install cargo-tarpaulin
 
-      - name: Code coverage (Tarpaulin)
+      - name: Code coverage and tests (Tarpaulin)
         run: cargo tarpaulin --fail-under 80 --out Xml
