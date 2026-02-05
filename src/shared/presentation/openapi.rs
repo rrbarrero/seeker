@@ -3,7 +3,7 @@ use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 
-use crate::auth::presentation::dtos::{LoginDto, SuccesfullLoginDto};
+use crate::auth::presentation::dtos::{LoginDto, SignupDto, SuccesfullLoginDto, UserUuidDto};
 use crate::positions::presentation::dtos::{
     PositionResponseDto, PositionUuidDto, SavePositionRequestDto,
 };
@@ -12,6 +12,7 @@ use crate::positions::presentation::dtos::{
 #[openapi(
     paths(
         crate::auth::presentation::handlers::login,
+        crate::auth::presentation::handlers::signup,
         crate::positions::presentation::handlers::get_positions,
         crate::positions::presentation::handlers::get_position,
         crate::positions::presentation::handlers::save_position,
@@ -20,7 +21,9 @@ use crate::positions::presentation::dtos::{
     components(
         schemas(
             LoginDto,
+            SignupDto,
             SuccesfullLoginDto,
+            UserUuidDto,
             PositionResponseDto,
             PositionUuidDto,
             SavePositionRequestDto
