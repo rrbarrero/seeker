@@ -74,7 +74,6 @@ impl From<PositionUuid> for PositionUuidDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct SavePositionRequestDto {
-    pub user_id: String,
     pub company: String,
     pub role_title: String,
     pub description: String,
@@ -85,10 +84,10 @@ pub struct SavePositionRequestDto {
 }
 
 impl SavePositionRequestDto {
-    pub fn to_new_position(&self) -> Result<Position, PositionApiError> {
+    pub fn to_new_position(&self, user_id: UserUuid) -> Result<Position, PositionApiError> {
         let position = Position {
             id: PositionUuid::new(),
-            user_id: UserUuid::from_str(&self.user_id)?,
+            user_id,
             company: Company::new(&self.company),
             role_title: RoleTitle::new(&self.role_title),
             description: Description::new(&self.description),

@@ -1,12 +1,72 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import { PositionList } from "@/modules/positions/presentation/components/position-list";
+import { CreatePositionForm } from "@/modules/positions/presentation/components/create-position-form";
+import type { Position } from "@/modules/positions/domain/position";
+import { positionService } from "@/modules/positions/composition-root";
 
 export default function DashboardPage() {
-    return (
-        <div className="container mx-auto py-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">My Applications</h1>
-            </div>
-            <PositionList />
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  const fetchPositions = async () => {
+    try {
+      // setIsLoading(true); // Don't set loading on refresh to avoid flickering entire list
+      const data = await positionService.getPositions();
+      setPositions(data);
+    } catch (error) {
+      console.error(error);
+      if (error instanceof Error && error.message === "Unauthorized") {
+        toast.error("Session expired", {
+          description: "Please log in again.",
+        });
+        router.push("/auth/login");
+      } else {
+        toast.error("Error loading positions", {
+          description: "Please try again later.",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPositions();
+  }, [router]);
+
+  const handlePositionCreated = () => {
+    fetchPositions();
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">My Applications</h1>
+      </div>
+
+      <div className="flex flex-col gap-8 lg:flex-row">
+        {/* Main Content - List */}
+        <div className="order-2 flex-1 lg:order-1">
+          {isLoading ? (
+            <div className="p-8 text-center">Loading positions...</div>
+          ) : (
+            <PositionList positions={positions} />
+          )}
         </div>
-    );
+
+        {/* Sidebar - Form */}
+        <div className="order-1 w-full lg:order-2 lg:w-[400px]">
+          <div className="sticky top-8">
+            <CreatePositionForm onSuccess={handlePositionCreated} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,5 +1,6 @@
-import type { Position } from "./position";
+import type { CreatePositionInput, Position } from "./position";
 
 export interface PositionRepository {
-    getPositions(): Promise<Position[]>;
+  getPositions(): Promise<Position[]>;
+  createPosition(position: CreatePositionInput): Promise<Position>;
 }

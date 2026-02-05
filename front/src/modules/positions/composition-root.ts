@@ -5,7 +5,7 @@ import { InMemoryPositionRepository } from "./infrastructure/in-memory-position-
 const useInMemory = process.env.NEXT_PUBLIC_USE_IN_MEMORY_REPO === "true";
 
 const positionRepository = useInMemory
-    ? new InMemoryPositionRepository()
-    : new ApiPositionRepository();
+  ? new InMemoryPositionRepository()
+  : new ApiPositionRepository();
 
 export const positionService = new PositionService(positionRepository);

@@ -7,13 +7,16 @@ use crate::{
             routes::PositionState,
         },
     },
-    shared::infrastructure::http::auth_extractor::AuthenticatedUser,
+    shared::{
+        domain::value_objects::UserUuid, infrastructure::http::auth_extractor::AuthenticatedUser,
+    },
 };
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
+use std::str::FromStr;
 
 #[utoipa::path(
     get,
@@ -79,11 +82,15 @@ pub async fn get_position(
     tag = "Positions"
 )]
 pub async fn save_position(
-    _user: AuthenticatedUser,
+    user: AuthenticatedUser,
     State(state): State<PositionState>,
     Json(payload): Json<SavePositionRequestDto>,
 ) -> Result<Json<PositionUuidDto>, PositionApiError> {
-    let position_uuid = state.service.save(payload.to_new_position()?).await?;
+    let user_id = UserUuid::from_str(&user.0)?;
+    let position_uuid = state
+        .service
+        .save(payload.to_new_position(user_id)?)
+        .await?;
     Ok(Json(position_uuid.into()))
 }
 
