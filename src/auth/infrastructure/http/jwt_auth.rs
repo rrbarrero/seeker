@@ -1,6 +1,11 @@
+use axum::{
+    extract::{FromRef, FromRequestParts},
+    http::{header::AUTHORIZATION, request::Parts},
+};
 use chrono::Utc;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, errors::ErrorKind};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::{
     auth::{application::errors::AuthError, domain::entities::user::User},
@@ -15,11 +20,11 @@ struct Claims {
 }
 
 pub fn create_jwt(user: &User, config: &Config) -> Result<String, AuthError> {
-    let experiation = Utc::now().timestamp() + config.jwt_expiration_time;
+    let expiration = Utc::now().timestamp() + config.jwt_expiration_time;
 
     let claims = Claims {
         sub: user.id.value().to_string(),
-        exp: experiation as usize,
+        exp: expiration as usize,
         email: user.email.value().to_string(),
     };
 
@@ -55,6 +60,32 @@ fn get_encoding_key(config: &Config) -> EncodingKey {
 
 fn get_decoding_key(config: &Config) -> DecodingKey {
     DecodingKey::from_secret(config.get_jwt_secret().as_bytes())
+}
+
+pub struct AuthenticatedUser(pub String);
+
+impl<S> FromRequestParts<S> for AuthenticatedUser
+where
+    S: Send + Sync,
+    Arc<Config>: FromRef<S>,
+{
+    type Rejection = AuthError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let auth_header = parts
+            .headers
+            .get(AUTHORIZATION)
+            .and_then(|value| value.to_str().ok())
+            .ok_or(AuthError::InvalidToken)?;
+
+        let token = auth_header
+            .strip_prefix("Bearer ")
+            .ok_or(AuthError::InvalidToken)?;
+
+        let config = Arc::<Config>::from_ref(state);
+        let user_id = validate_token(token, &config)?;
+        Ok(AuthenticatedUser(user_id))
+    }
 }
 
 #[cfg(test)]
