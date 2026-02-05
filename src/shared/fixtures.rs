@@ -20,3 +20,13 @@ pub fn create_fixture_position() -> Position {
         .with_status(PositionStatus::PhoneScreenScheduled)
         .build()
 }
+
+pub fn valid_email() -> &'static str {
+    "test@example.com"
+}
+pub fn valid_password() -> &'static str {
+    "S0m3V3ryStr0ngP@ssw0rd!"
+}
+pub fn valid_id() -> String {
+    Uuid::new_v4().to_string()
+}

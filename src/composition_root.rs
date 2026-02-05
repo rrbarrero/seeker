@@ -1,5 +1,6 @@
 use crate::auth::application::auth_service::AuthService;
 use crate::auth::domain::repositories::user_repository::IUserRepository;
+use crate::auth::infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository;
 use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::positions::application::position_service::PositionService;
 use crate::positions::domain::repositories::position_repository::IPositionRepository;
@@ -15,6 +16,10 @@ pub async fn create_position_postgres_repository(
     pool: sqlx::postgres::PgPool,
 ) -> PositionPostgresRepository {
     PositionPostgresRepository::new(pool).await
+}
+
+pub async fn create_user_in_memory_repository() -> UserInMemoryRepository {
+    UserInMemoryRepository::default()
 }
 
 pub async fn create_user_postgres_repository(

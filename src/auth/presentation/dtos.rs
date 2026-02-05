@@ -15,3 +15,14 @@ pub struct LoginDto {
     pub email: String,
     pub password: String,
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct SignupDto {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct UserUuidDto {
+    pub user_uuid: String,
+}

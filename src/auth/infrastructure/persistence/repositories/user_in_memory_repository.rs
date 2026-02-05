@@ -64,20 +64,9 @@ impl IUserRepository for UserInMemoryRepository {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
+    use crate::shared::fixtures::{valid_email, valid_id, valid_password};
 
     use super::*;
-
-    // Helpers
-    fn valid_email() -> &'static str {
-        "test@example.com"
-    }
-    fn valid_password() -> &'static str {
-        "S0m3V3ryStr0ngP@ssw0rd!"
-    }
-    fn valid_id() -> String {
-        Uuid::new_v4().to_string()
-    }
 
     #[tokio::test]
     async fn test_user_save() -> Result<(), AuthRepoError> {

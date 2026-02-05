@@ -89,21 +89,12 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::domain::errors::SharedDomainError;
-    use uuid::Uuid;
+    use crate::shared::{
+        domain::errors::SharedDomainError,
+        fixtures::{valid_email, valid_id, valid_password},
+    };
 
     use super::*;
-
-    // Helper to get consistent valid data for tests
-    fn valid_email() -> &'static str {
-        "test@example.com"
-    }
-    fn valid_password() -> &'static str {
-        "S0m3V3ryStr0ngP@ssw0rd!"
-    }
-    fn valid_id() -> String {
-        Uuid::new_v4().to_string()
-    }
 
     #[test]
     fn test_wrong_uuid() {
