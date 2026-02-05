@@ -152,4 +152,74 @@ mod tests {
 
         assert_eq!(result.unwrap_err(), AuthError::TokenExpired);
     }
+
+    #[derive(Clone)]
+    struct TestState {
+        config: Arc<Config>,
+    }
+
+    impl FromRef<TestState> for Arc<Config> {
+        fn from_ref(state: &TestState) -> Self {
+            state.config.clone()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_authenticated_user_extractor_success() {
+        let config = Config::test_default();
+        let id = Uuid::new_v4().to_string();
+        let user = User::new(&id, "test@test.com", "S0m3V3ryStr0ngP@ssw0rd!").unwrap();
+        let token = create_jwt(&user, &config).unwrap();
+
+        let state = TestState {
+            config: Arc::new(config),
+        };
+
+        let (mut parts, _) = axum::http::Request::builder()
+            .header(AUTHORIZATION, format!("Bearer {}", token))
+            .body(())
+            .unwrap()
+            .into_parts();
+
+        let auth_user = AuthenticatedUser::from_request_parts(&mut parts, &state)
+            .await
+            .unwrap();
+
+        assert_eq!(auth_user.0, id);
+    }
+
+    #[tokio::test]
+    async fn test_authenticated_user_extractor_invalid_token() {
+        let config = Config::test_default();
+        let state = TestState {
+            config: Arc::new(config),
+        };
+
+        let (mut parts, _) = axum::http::Request::builder()
+            .header(AUTHORIZATION, "Bearer invalid-token")
+            .body(())
+            .unwrap()
+            .into_parts();
+
+        let result = AuthenticatedUser::from_request_parts(&mut parts, &state).await;
+
+        assert!(matches!(result, Err(AuthError::InvalidToken)));
+    }
+
+    #[tokio::test]
+    async fn test_authenticated_user_extractor_missing_header() {
+        let config = Config::test_default();
+        let state = TestState {
+            config: Arc::new(config),
+        };
+
+        let (mut parts, _) = axum::http::Request::builder()
+            .body(())
+            .unwrap()
+            .into_parts();
+
+        let result = AuthenticatedUser::from_request_parts(&mut parts, &state).await;
+
+        assert!(matches!(result, Err(AuthError::InvalidToken)));
+    }
 }
