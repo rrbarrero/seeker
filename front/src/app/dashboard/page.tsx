@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 import { PositionList } from "@/modules/positions/presentation/components/position-list";
 import { CreatePositionForm } from "@/modules/positions/presentation/components/create-position-form";
 import type { Position } from "@/modules/positions/domain/position";
 import { positionService } from "@/modules/positions/composition-root";
+import { authService } from "@/modules/auth/composition-root";
 
 export default function DashboardPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const fetchPositions = async () => {
+  const fetchPositions = useCallback(async () => {
     try {
-      // setIsLoading(true); // Don't set loading on refresh to avoid flickering entire list
       const data = await positionService.getPositions();
       setPositions(data);
     } catch (error) {
@@ -25,6 +28,7 @@ export default function DashboardPage() {
         toast.error("Session expired", {
           description: "Please log in again.",
         });
+        authService.logout();
         router.push("/auth/login");
       } else {
         toast.error("Error loading positions", {
@@ -34,20 +38,29 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchPositions();
-  }, [router]);
+  }, [fetchPositions]);
 
   const handlePositionCreated = () => {
     fetchPositions();
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    router.push("/auth/login");
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">My Applications</h1>
+        <Button variant="outline" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">

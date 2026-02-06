@@ -1,9 +1,12 @@
 import type { CreatePositionInput, Position } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
+import type { TokenRepository } from "@/modules/auth/domain/token-repository";
 
 export class ApiPositionRepository implements PositionRepository {
+  constructor(private readonly tokenRepository: TokenRepository) {}
+
   async getPositions(): Promise<Position[]> {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = this.tokenRepository.get();
 
     if (!token) {
       throw new Error("No authentication token found");
@@ -28,7 +31,7 @@ export class ApiPositionRepository implements PositionRepository {
   }
 
   async createPosition(position: CreatePositionInput): Promise<Position> {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = this.tokenRepository.get();
 
     if (!token) {
       throw new Error("No authentication token found");
