@@ -8,6 +8,7 @@ import { PositionList } from "@/modules/positions/presentation/components/positi
 import { CreatePositionForm } from "@/modules/positions/presentation/components/create-position-form";
 import type { Position } from "@/modules/positions/domain/position";
 import { positionService } from "@/modules/positions/composition-root";
+import { LogoutButton } from "@/modules/auth/presentation/components/logout-button";
 
 export default function DashboardPage() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -48,6 +49,7 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">My Applications</h1>
+        <LogoutButton />
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
