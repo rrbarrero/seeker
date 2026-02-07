@@ -27,7 +27,7 @@ export function PositionList({ positions }: PositionListProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+    <div className="grid gap-4">
       {positions.map((position) => (
         <Card key={position.id} className="transition-shadow hover:shadow-md">
           <CardHeader>
@@ -42,20 +42,23 @@ export function PositionList({ positions }: PositionListProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-3 line-clamp-3 text-sm">
-              {position.description}
-            </p>
-            <div className="text-muted-foreground text-xs">Applied on: {position.applied_on}</div>
-            {position.url && (
-              <a
-                href={position.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary mt-1 block truncate text-xs hover:underline"
-              >
-                {position.url}
-              </a>
-            )}
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                {position.url && (
+                  <a
+                    href={position.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary truncate text-xs hover:underline"
+                  >
+                    {position.url}
+                  </a>
+                )}
+              </div>
+              <div className="text-muted-foreground shrink-0 text-xs">
+                Applied on: {position.applied_on}
+              </div>
+            </div>
           </CardContent>
           <CardFooter>
             <Button variant="outline" size="sm" className="w-full">

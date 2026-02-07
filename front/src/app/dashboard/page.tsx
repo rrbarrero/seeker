@@ -17,9 +17,11 @@ export default function DashboardPage() {
 
   const fetchPositions = async () => {
     try {
-      // setIsLoading(true); // Don't set loading on refresh to avoid flickering entire list
       const data = await positionService.getPositions();
-      setPositions(data);
+      const sortedPositions = [...data].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setPositions(sortedPositions);
     } catch (error) {
       console.error(error);
       if (error instanceof Error && error.message === "Unauthorized") {
