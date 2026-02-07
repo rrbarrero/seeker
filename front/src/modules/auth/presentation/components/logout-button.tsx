@@ -8,18 +8,18 @@ import { Button } from "@/components/ui/button";
 import { authService } from "../../composition-root";
 
 export function LogoutButton() {
-    const router = useRouter();
+  const router = useRouter();
 
-    const handleLogout = () => {
-        authService.logout();
-        toast.success("Logged out successfully");
-        router.push("/auth/login");
-    };
+  const handleLogout = () => {
+    authService.logout();
+    toast.success("Logged out successfully");
+    router.push("/auth/login");
+  };
 
-    return (
-        <Button variant="ghost" size="sm" onClick={handleLogout} className="flex gap-2">
-            <LogOut className="h-4 w-4" />
-            Logout
-        </Button>
-    );
+  return (
+    <Button variant="ghost" size="sm" onClick={handleLogout} className="flex gap-2">
+      <LogOut className="h-4 w-4" />
+      Logout
+    </Button>
+  );
 }
