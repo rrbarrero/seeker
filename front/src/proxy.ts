@@ -1,19 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/auth/login", "/auth/register", "/"];
+const publicRoutes = ["/auth/login", "/auth/register"];
 
 export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  // Check if the current route is public
-  // We treat '/' as exact match, others as prefixes to allow sub-paths like /auth/login/forgot-password if needed
-  const isPublicRoute = publicRoutes.some((route) =>
-    route === "/" ? pathname === route : pathname.startsWith(route),
-  );
+  // Handle root path redirect
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(token ? "/dashboard" : "/auth/login", request.url));
+  }
 
-  // If NOT authenticated and trying to access a PROTECTED route (not public)
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+
+  // If authenticated and trying to access auth routes, redirect to dashboard
+  if (token && isPublicRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // If NOT authenticated and trying to access a PROTECTED route
   if (!token && !isPublicRoute) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
