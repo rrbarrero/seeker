@@ -4,11 +4,15 @@ import type { PositionRepository } from "../domain/position-repository";
 export class PositionService {
   constructor(private readonly repository: PositionRepository) {}
 
-  async getPositions(): Promise<Position[]> {
-    return this.repository.getPositions();
+  async getPositions(token?: string): Promise<Position[]> {
+    return this.repository.getPositions(token);
   }
 
-  async createPosition(position: CreatePositionInput): Promise<Position> {
-    return this.repository.createPosition(position);
+  async createPosition(position: CreatePositionInput, token?: string): Promise<Position> {
+    return this.repository.createPosition(position, token);
+  }
+
+  async getPosition(id: string, token?: string): Promise<Position> {
+    return this.repository.getPositionById(id, token);
   }
 }

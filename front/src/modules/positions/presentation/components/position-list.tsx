@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 import type { Position } from "../../domain/position";
 
@@ -61,9 +62,11 @@ export function PositionList({ positions }: PositionListProps) {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" size="sm" className="w-full">
-              View Details
-            </Button>
+            <Link href={`/dashboard/positions/${position.id}`} className="w-full">
+              <Button variant="outline" size="sm" className="w-full">
+                View Details
+              </Button>
+            </Link>
           </CardFooter>
         </Card>
       ))}
