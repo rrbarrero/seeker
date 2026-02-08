@@ -1,3 +1,4 @@
+import { DomainError } from "@/shared/domain/errors";
 import { AppliedDate } from "./value-objects/applied-date";
 import { PositionUrl } from "./value-objects/position-url";
 
@@ -37,10 +38,10 @@ export class Position {
 
   private validate(): void {
     if (!this.props.company || this.props.company.trim() === "") {
-      throw new Error("Company name is required");
+      throw new DomainError("Company name is required", "MISSING_COMPANY");
     }
     if (!this.props.role_title || this.props.role_title.trim() === "") {
-      throw new Error("Role title is required");
+      throw new DomainError("Role title is required", "MISSING_ROLE_TITLE");
     }
   }
 
@@ -104,7 +105,10 @@ export class Position {
     };
 
     if (forbiddenTransitions[this.props.status]?.includes(newStatus)) {
-      throw new Error(`Cannot transition from ${this.props.status} to ${newStatus}`);
+      throw new DomainError(
+        `Cannot transition from ${this.props.status} to ${newStatus}`,
+        "INVALID_STATUS_TRANSITION",
+      );
     }
   }
 

@@ -1,3 +1,4 @@
+import { DomainError } from "@/shared/domain/errors";
 import { ValueObject } from "@/shared/domain/value-object";
 
 export class AppliedDate extends ValueObject<string> {
@@ -9,7 +10,7 @@ export class AppliedDate extends ValueObject<string> {
   private validate(value: string): void {
     const date = new Date(value);
     if (isNaN(date.getTime())) {
-      throw new Error("Invalid date format");
+      throw new DomainError("Invalid date format", "INVALID_DATE");
     }
   }
 

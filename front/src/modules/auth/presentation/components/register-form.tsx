@@ -1,11 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,40 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { RegisterFormValues } from "../../domain/schema";
-import { registerSchema } from "../../domain/schema";
-import { authService } from "../../composition-root";
+import { useRegisterForm } from "../hooks/use-register-form";
 
 export function RegisterForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  async function onSubmit(data: RegisterFormValues) {
-    setIsLoading(true);
-    try {
-      await authService.register(data);
-      toast.success("Account created successfully", {
-        description: "You can now log in with your credentials.",
-      });
-      router.push("/auth/login");
-    } catch (error) {
-      toast.error("Registration error", {
-        description: "There was a problem creating your account. Please try again.",
-      });
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { form, onSubmit, isLoading } = useRegisterForm();
 
   return (
     <Card className="mx-auto w-full max-w-md">
@@ -69,7 +33,7 @@ export function RegisterForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="email"

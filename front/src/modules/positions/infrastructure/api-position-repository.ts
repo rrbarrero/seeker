@@ -1,4 +1,5 @@
 import { getBaseUrl } from "@/shared/api-config";
+import { InfrastructureError, NotFoundError, UnauthorizedError } from "@/shared/domain/errors";
 import type { TokenRepository } from "@/modules/auth/domain/token-repository";
 import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
@@ -10,7 +11,7 @@ export class ApiPositionRepository implements PositionRepository {
     const token = providedToken || this.tokenRepository.get();
 
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new UnauthorizedError("No authentication token found");
     }
 
     const response = await fetch(`${getBaseUrl()}/positions`, {
@@ -23,9 +24,13 @@ export class ApiPositionRepository implements PositionRepository {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Unauthorized");
+        throw new UnauthorizedError();
       }
-      throw new Error(`Error fetching positions: ${response.statusText}`);
+      throw new InfrastructureError(
+        `Error fetching positions: ${response.statusText}`,
+        "FETCH_ERROR",
+        response.status,
+      );
     }
 
     const data: PositionProps[] = await response.json();
@@ -36,7 +41,7 @@ export class ApiPositionRepository implements PositionRepository {
     const token = providedToken || this.tokenRepository.get();
 
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new UnauthorizedError("No authentication token found");
     }
 
     const response = await fetch(`${getBaseUrl()}/positions`, {
@@ -50,9 +55,13 @@ export class ApiPositionRepository implements PositionRepository {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Unauthorized");
+        throw new UnauthorizedError();
       }
-      throw new Error(`Error creating position: ${response.statusText}`);
+      throw new InfrastructureError(
+        `Error creating position: ${response.statusText}`,
+        "CREATE_ERROR",
+        response.status,
+      );
     }
 
     const props: PositionProps = await response.json();
@@ -63,7 +72,7 @@ export class ApiPositionRepository implements PositionRepository {
     const token = providedToken || this.tokenRepository.get();
 
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new UnauthorizedError("No authentication token found");
     }
 
     const response = await fetch(`${getBaseUrl()}/positions/${id}`, {
@@ -76,12 +85,16 @@ export class ApiPositionRepository implements PositionRepository {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Unauthorized");
+        throw new UnauthorizedError();
       }
       if (response.status === 404) {
-        throw new Error("Position not found");
+        throw new NotFoundError("Position not found");
       }
-      throw new Error(`Error fetching position: ${response.statusText}`);
+      throw new InfrastructureError(
+        `Error fetching position: ${response.statusText}`,
+        "FETCH_ONE_ERROR",
+        response.status,
+      );
     }
 
     const props: PositionProps = await response.json();

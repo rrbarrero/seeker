@@ -1,3 +1,4 @@
+import { DomainError } from "@/shared/domain/errors";
 import { ValueObject } from "@/shared/domain/value-object";
 
 export class PositionUrl extends ValueObject<string> {
@@ -11,7 +12,7 @@ export class PositionUrl extends ValueObject<string> {
     try {
       new URL(value);
     } catch {
-      throw new Error("Invalid URL format");
+      throw new DomainError("Invalid URL format", "INVALID_URL");
     }
   }
 

@@ -1,4 +1,5 @@
 import { getBaseUrl } from "@/shared/api-config";
+import { InfrastructureError, UnauthorizedError } from "@/shared/domain/errors";
 import type { AuthRepository } from "../domain/auth-repository";
 import type { LoginFormValues, RegisterFormValues } from "../domain/schema";
 
@@ -16,7 +17,7 @@ export class ApiAuthRepository implements AuthRepository {
     });
 
     if (!response.ok) {
-      throw new Error("Error registering user");
+      throw new InfrastructureError("Error registering user", "REGISTER_ERROR", response.status);
     }
   }
 
@@ -33,7 +34,10 @@ export class ApiAuthRepository implements AuthRepository {
     });
 
     if (!response.ok) {
-      throw new Error("Invalid credentials");
+      if (response.status === 401) {
+        throw new UnauthorizedError("Invalid credentials");
+      }
+      throw new InfrastructureError("Login failed", "LOGIN_ERROR", response.status);
     }
 
     return response.json();

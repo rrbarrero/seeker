@@ -5,29 +5,30 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { authService } from "../../composition-root";
-import { loginSchema, type LoginFormValues } from "../../domain/schema";
+import { registerSchema, type RegisterFormValues } from "../../domain/schema";
 import { UiErrorHandler } from "@/shared/presentation/error-handler";
 
-export function useLoginForm() {
+export function useRegisterForm() {
   const router = useRouter();
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await authService.login(data);
-      toast.success("Login successful", {
-        description: "Welcome back!",
+      await authService.register(data);
+      toast.success("Account created successfully", {
+        description: "You can now log in with your credentials.",
       });
-      router.push("/dashboard");
+      router.push("/auth/login");
     } catch (error) {
-      UiErrorHandler.handle(error, "Please check your email and password.");
+      UiErrorHandler.handle(error, "There was a problem creating your account.");
     }
   };
 
