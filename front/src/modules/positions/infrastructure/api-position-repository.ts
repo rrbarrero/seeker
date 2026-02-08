@@ -1,6 +1,6 @@
 import { getBaseUrl } from "@/shared/api-config";
 import type { TokenRepository } from "@/modules/auth/domain/token-repository";
-import type { CreatePositionInput, Position } from "../domain/position";
+import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
 
 export class ApiPositionRepository implements PositionRepository {
@@ -28,7 +28,8 @@ export class ApiPositionRepository implements PositionRepository {
       throw new Error(`Error fetching positions: ${response.statusText}`);
     }
 
-    return response.json();
+    const data: PositionProps[] = await response.json();
+    return data.map((props) => Position.fromPrimitives(props));
   }
 
   async createPosition(position: CreatePositionInput, providedToken?: string): Promise<Position> {
@@ -54,7 +55,8 @@ export class ApiPositionRepository implements PositionRepository {
       throw new Error(`Error creating position: ${response.statusText}`);
     }
 
-    return response.json();
+    const props: PositionProps = await response.json();
+    return Position.fromPrimitives(props);
   }
 
   async getPositionById(id: string, providedToken?: string): Promise<Position> {
@@ -82,6 +84,7 @@ export class ApiPositionRepository implements PositionRepository {
       throw new Error(`Error fetching position: ${response.statusText}`);
     }
 
-    return response.json();
+    const props: PositionProps = await response.json();
+    return Position.fromPrimitives(props);
   }
 }

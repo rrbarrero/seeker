@@ -11,14 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-import type { Position } from "../../domain/position";
+import { Position, type PositionProps } from "../../domain/position";
 
 interface PositionListProps {
-  positions: Position[];
+  positions: PositionProps[];
 }
 
-export function PositionList({ positions }: PositionListProps) {
-  if (positions.length === 0) {
+export function PositionList({ positions: positionsProps }: PositionListProps) {
+  if (positionsProps.length === 0) {
     return (
       <div className="bg-muted/20 rounded-lg border p-8 text-center">
         <h2 className="text-xl font-semibold">No positions found</h2>
@@ -26,6 +26,8 @@ export function PositionList({ positions }: PositionListProps) {
       </div>
     );
   }
+
+  const positions = positionsProps.map((props) => Position.fromPrimitives(props));
 
   return (
     <div className="grid gap-4">
@@ -57,7 +59,7 @@ export function PositionList({ positions }: PositionListProps) {
                 )}
               </div>
               <div className="text-muted-foreground shrink-0 text-xs">
-                Applied on: {position.applied_on}
+                Applied on: {position.getFormattedAppliedDate()}
               </div>
             </div>
           </CardContent>

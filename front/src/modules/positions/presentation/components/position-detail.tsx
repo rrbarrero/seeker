@@ -11,14 +11,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Position } from "../../domain/position";
+import { Position, type PositionProps } from "../../domain/position";
 
 interface PositionDetailProps {
-  position: Position;
+  position: PositionProps;
 }
 
-export function PositionDetail({ position }: PositionDetailProps) {
+export function PositionDetail({ position: props }: PositionDetailProps) {
   const router = useRouter();
+  const position = Position.fromPrimitives(props);
 
   return (
     <div className="space-y-6">
@@ -93,7 +94,9 @@ export function PositionDetail({ position }: PositionDetailProps) {
                 <Calendar className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">Applied On</p>
-                  <p className="text-muted-foreground text-xs">{position.applied_on}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {position.getFormattedAppliedDate()}
+                  </p>
                 </div>
               </div>
 

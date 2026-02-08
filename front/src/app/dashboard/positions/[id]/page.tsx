@@ -28,7 +28,7 @@ export default async function PositionPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
-      <PositionDetail position={position} />
+      <PositionDetail position={position.toPrimitives()} />
     </div>
   );
 }

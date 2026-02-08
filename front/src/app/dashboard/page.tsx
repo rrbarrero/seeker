@@ -6,20 +6,21 @@ import { useRouter } from "next/navigation";
 
 import { PositionList } from "@/modules/positions/presentation/components/position-list";
 import { CreatePositionForm } from "@/modules/positions/presentation/components/create-position-form";
-import type { Position } from "@/modules/positions/domain/position";
+import type { PositionProps } from "@/modules/positions/domain/position";
 import { positionService } from "@/modules/positions/composition-root";
 import { LogoutButton } from "@/modules/auth/presentation/components/logout-button";
 import { authService } from "@/modules/auth/composition-root";
 
 export default function DashboardPage() {
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<PositionProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const fetchPositions = useCallback(async () => {
     try {
       const data = await positionService.getPositions();
-      const sortedPositions = [...data].sort(
+      const primitives = data.map((p) => p.toPrimitives());
+      const sortedPositions = [...primitives].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       setPositions(sortedPositions);

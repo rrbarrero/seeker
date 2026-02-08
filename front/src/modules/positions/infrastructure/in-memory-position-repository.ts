@@ -1,9 +1,9 @@
-import type { CreatePositionInput, Position } from "../domain/position";
+import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
 
 export class InMemoryPositionRepository implements PositionRepository {
   private positions: Position[] = [
-    {
+    Position.fromPrimitives({
       id: "1",
       user_id: "user-1",
       company: "Rust Corp",
@@ -17,8 +17,8 @@ export class InMemoryPositionRepository implements PositionRepository {
       updated_at: new Date().toISOString(),
       deleted_at: null,
       deleted: false,
-    },
-    {
+    }),
+    Position.fromPrimitives({
       id: "2",
       user_id: "user-1",
       company: "Next.js Inc",
@@ -32,7 +32,7 @@ export class InMemoryPositionRepository implements PositionRepository {
       updated_at: new Date().toISOString(),
       deleted_at: null,
       deleted: false,
-    },
+    }),
   ];
 
   async getPositions(_token?: string): Promise<Position[]> {
@@ -44,7 +44,7 @@ export class InMemoryPositionRepository implements PositionRepository {
   async createPosition(input: CreatePositionInput, _token?: string): Promise<Position> {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const newPosition: Position = {
+    const props: PositionProps = {
       ...input,
       id: Math.random().toString(36).substring(7),
       user_id: "user-1",
@@ -54,6 +54,7 @@ export class InMemoryPositionRepository implements PositionRepository {
       deleted: false,
     };
 
+    const newPosition = Position.fromPrimitives(props);
     this.positions.push(newPosition);
     return newPosition;
   }
@@ -64,6 +65,6 @@ export class InMemoryPositionRepository implements PositionRepository {
     if (!position) {
       throw new Error("Position not found");
     }
-    return { ...position };
+    return position;
   }
 }
