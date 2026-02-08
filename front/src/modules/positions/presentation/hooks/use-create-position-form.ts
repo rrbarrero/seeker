@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { UiErrorHandler } from "@/shared/presentation/error-handler";
 import { positionService } from "../../composition-root";
 import type { PositionStatus } from "../../domain/position";
 
@@ -60,8 +61,7 @@ export function useCreatePositionForm({ onSuccess }: UseCreatePositionFormProps)
       form.reset();
       onSuccess();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to create position");
+      UiErrorHandler.handle(error, "Failed to create position");
     }
   };
 

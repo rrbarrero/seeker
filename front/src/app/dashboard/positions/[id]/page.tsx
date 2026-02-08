@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { NotFoundError } from "@/shared/domain/errors";
 import { positionService } from "@/modules/positions/composition-root";
 import { PositionDetail } from "@/modules/positions/presentation/components/position-detail";
 
@@ -18,8 +19,10 @@ export default async function PositionPage({ params }: PageProps) {
   try {
     position = await positionService.getPosition(id, token);
   } catch (error) {
-    console.error("Error fetching position:", error);
-    notFound();
+    if (error instanceof NotFoundError) {
+      notFound();
+    }
+    throw error;
   }
 
   if (!position) {

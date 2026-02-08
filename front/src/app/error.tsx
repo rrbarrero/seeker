@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertTriangle } from "lucide-react";
 import { ErrorState } from "@/components/shared/error-state";
 
-export default function Error({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -13,18 +12,17 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error(error);
+    console.error("Global Error:", error);
   }, [error]);
 
   return (
     <ErrorState
-      title="Something went wrong in the dashboard"
-      description="An unexpected error occurred while loading this section. Our team has been notified."
+      title="Something went wrong"
+      description="We apologize for the inconvenience. An unexpected error occurred at the application level."
       error={error}
       reset={reset}
+      fullPage={true}
       homeLink="/"
-      icon={AlertTriangle}
-      className="min-h-[70vh]"
     />
   );
 }

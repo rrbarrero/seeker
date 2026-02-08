@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 import { PositionList } from "@/modules/positions/presentation/components/position-list";
@@ -10,6 +9,8 @@ import type { PositionProps } from "@/modules/positions/domain/position";
 import { positionService } from "@/modules/positions/composition-root";
 import { LogoutButton } from "@/modules/auth/presentation/components/logout-button";
 import { authService } from "@/modules/auth/composition-root";
+import { UiErrorHandler } from "@/shared/presentation/error-handler";
+import { UnauthorizedError } from "@/shared/domain/errors";
 
 export default function DashboardPage() {
   const [positions, setPositions] = useState<PositionProps[]>([]);
@@ -25,17 +26,10 @@ export default function DashboardPage() {
       );
       setPositions(sortedPositions);
     } catch (error) {
-      console.error(error);
-      if (error instanceof Error && error.message === "Unauthorized") {
-        toast.error("Session expired", {
-          description: "Please log in again.",
-        });
+      UiErrorHandler.handle(error, "Error loading positions");
+      if (error instanceof UnauthorizedError) {
         authService.logout();
         router.push("/auth/login");
-      } else {
-        toast.error("Error loading positions", {
-          description: "Please try again later.",
-        });
       }
     } finally {
       setIsLoading(false);
