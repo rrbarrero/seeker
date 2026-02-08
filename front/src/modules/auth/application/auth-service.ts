@@ -23,5 +23,6 @@ export class AuthService {
 
   logout(): void {
     this.tokenRepository.remove();
+    this.authRepository.logout();
   }
 }
