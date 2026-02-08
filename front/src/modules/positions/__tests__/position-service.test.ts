@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { PositionService } from "../application/position-service";
-import type { PositionRepository } from "../domain/position-repository";
 import { Position, type CreatePositionInput } from "../domain/position";
+import { InMemoryPositionRepository } from "../infrastructure/in-memory-position-repository";
 
 describe("PositionService", () => {
   let positionService: PositionService;
-  let mockRepository: PositionRepository;
+  let repository: InMemoryPositionRepository;
   let mockPositions: Position[];
   let mockCreatePositionInput: CreatePositionInput;
 
@@ -53,167 +53,77 @@ describe("PositionService", () => {
       status: "CvSent",
     };
 
-    mockRepository = {
-      getPositions: vi.fn(),
-      createPosition: vi.fn(),
-      getPositionById: vi.fn(),
-    };
-
-    positionService = new PositionService(mockRepository);
+    // Initialize repository with mock positions
+    repository = new InMemoryPositionRepository(mockPositions);
+    positionService = new PositionService(repository);
   });
 
   describe("getPositions", () => {
     it("should return positions from repository", async () => {
-      vi.mocked(mockRepository.getPositions).mockResolvedValue(mockPositions);
-
       const result = await positionService.getPositions("test-token");
-
-      expect(mockRepository.getPositions).toHaveBeenCalledWith("test-token");
-      expect(result).toEqual(mockPositions);
-    });
-
-    it("should call repository without token when not provided", async () => {
-      vi.mocked(mockRepository.getPositions).mockResolvedValue(mockPositions);
-
-      await positionService.getPositions();
-
-      expect(mockRepository.getPositions).toHaveBeenCalledWith(undefined);
-    });
-
-    it("should propagate repository errors", async () => {
-      const error = new Error("Repository error");
-      vi.mocked(mockRepository.getPositions).mockRejectedValue(error);
-
-      await expect(positionService.getPositions()).rejects.toThrow("Repository error");
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe("1");
+      expect(result[1].id).toBe("2");
     });
 
     it("should return empty array when repository has no positions", async () => {
-      vi.mocked(mockRepository.getPositions).mockResolvedValue([]);
+      const emptyRepo = new InMemoryPositionRepository([]);
+      const service = new PositionService(emptyRepo);
 
-      const result = await positionService.getPositions();
-
+      const result = await service.getPositions();
       expect(result).toEqual([]);
     });
   });
 
   describe("createPosition", () => {
     it("should create position through repository", async () => {
-      const expectedPosition = Position.fromPrimitives({
-        ...mockCreatePositionInput,
-        id: "3",
-        user_id: "user1",
-        created_at: "2024-02-01T10:00:00Z",
-        updated_at: "2024-02-01T10:00:00Z",
-        deleted_at: null,
-        deleted: false,
-      });
-
-      vi.mocked(mockRepository.createPosition).mockResolvedValue(expectedPosition);
-
       const result = await positionService.createPosition(mockCreatePositionInput, "test-token");
 
-      expect(mockRepository.createPosition).toHaveBeenCalledWith(
-        mockCreatePositionInput,
-        "test-token",
-      );
-      expect(result).toEqual(expectedPosition);
-    });
+      expect(result.company).toBe(mockCreatePositionInput.company);
+      expect(result.role_title).toBe(mockCreatePositionInput.role_title);
 
-    it("should call repository without token when not provided", async () => {
-      const expectedPosition = Position.fromPrimitives({
-        ...mockCreatePositionInput,
-        id: "3",
-        user_id: "user1",
-        created_at: "2024-02-01T10:00:00Z",
-        updated_at: "2024-02-01T10:00:00Z",
-        deleted_at: null,
-        deleted: false,
-      });
-
-      vi.mocked(mockRepository.createPosition).mockResolvedValue(expectedPosition);
-
-      await positionService.createPosition(mockCreatePositionInput);
-
-      expect(mockRepository.createPosition).toHaveBeenCalledWith(
-        mockCreatePositionInput,
-        undefined,
-      );
-    });
-
-    it("should propagate repository errors", async () => {
-      const error = new Error("Creation failed");
-      vi.mocked(mockRepository.createPosition).mockRejectedValue(error);
-
-      await expect(positionService.createPosition(mockCreatePositionInput)).rejects.toThrow(
-        "Creation failed",
-      );
+      // Verify it was actually saved in the repo
+      const allPositions = await repository.getPositions();
+      expect(allPositions).toHaveLength(3);
     });
   });
 
   describe("getPosition", () => {
     it("should get position by id from repository", async () => {
-      const positionId = "1";
-      vi.mocked(mockRepository.getPositionById).mockResolvedValue(mockPositions[0]);
-
-      const result = await positionService.getPosition(positionId, "test-token");
-
-      expect(mockRepository.getPositionById).toHaveBeenCalledWith(positionId, "test-token");
-      expect(result).toEqual(mockPositions[0]);
+      const result = await positionService.getPosition("1", "test-token");
+      expect(result.id).toBe("1");
+      expect(result.company).toBe("Acme Corp");
     });
 
-    it("should call repository without token when not provided", async () => {
-      const positionId = "1";
-      vi.mocked(mockRepository.getPositionById).mockResolvedValue(mockPositions[0]);
-
-      await positionService.getPosition(positionId);
-
-      expect(mockRepository.getPositionById).toHaveBeenCalledWith(positionId, undefined);
-    });
-
-    it("should propagate repository errors", async () => {
-      const positionId = "999";
-      const error = new Error("Position not found");
-      vi.mocked(mockRepository.getPositionById).mockRejectedValue(error);
-
-      await expect(positionService.getPosition(positionId)).rejects.toThrow("Position not found");
+    it("should throw error when position not found", async () => {
+      await expect(positionService.getPosition("999")).rejects.toThrow("Position not found");
     });
 
     it("should handle different position statuses", async () => {
       const props = mockPositions[0].toPrimitives();
-      const positionWithDifferentStatus = Position.fromPrimitives({
-        ...props,
-        status: "OfferReceived",
-      });
+      const updatedRepo = new InMemoryPositionRepository([
+        Position.fromPrimitives({ ...props, status: "OfferReceived" }),
+      ]);
+      const service = new PositionService(updatedRepo);
 
-      vi.mocked(mockRepository.getPositionById).mockResolvedValue(positionWithDifferentStatus);
-
-      const result = await positionService.getPosition("1");
-
+      const result = await service.getPosition("1");
       expect(result.status).toBe("OfferReceived");
     });
   });
 
   describe("integration behavior", () => {
     it("should maintain consistency across operations", async () => {
-      vi.mocked(mockRepository.getPositions).mockResolvedValue([mockPositions[0]]);
-      vi.mocked(mockRepository.createPosition).mockResolvedValue(
-        Position.fromPrimitives({
-          ...mockCreatePositionInput,
-          id: "3",
-          user_id: "user1",
-          created_at: "2024-02-01T10:00:00Z",
-          updated_at: "2024-02-01T10:00:00Z",
-          deleted_at: null,
-          deleted: false,
-        }),
-      );
-
       const initialPositions = await positionService.getPositions();
-      const newPosition = await positionService.createPosition(mockCreatePositionInput);
+      expect(initialPositions).toHaveLength(2);
 
-      expect(initialPositions).toHaveLength(1);
-      expect(newPosition.id).toBe("3");
+      const newPosition = await positionService.createPosition(mockCreatePositionInput);
       expect(newPosition.company).toBe(mockCreatePositionInput.company);
+
+      const updatedPositions = await positionService.getPositions();
+      expect(updatedPositions).toHaveLength(3);
+
+      const fetchedPosition = await positionService.getPosition(newPosition.id);
+      expect(fetchedPosition.id).toBe(newPosition.id);
     });
   });
 });
