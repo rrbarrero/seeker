@@ -73,7 +73,7 @@ pub async fn get_position(
     path = "/positions",
     request_body = SavePositionRequestDto,
     responses(
-        (status = 200, description = "Position saved", body = PositionUuidDto),
+        (status = 200, description = "Position saved", body = PositionResponseDto),
         (status = 401, description = "Unauthorized")
     ),
     security(
@@ -85,13 +85,11 @@ pub async fn save_position(
     user: AuthenticatedUser,
     State(state): State<PositionState>,
     Json(payload): Json<SavePositionRequestDto>,
-) -> Result<Json<PositionUuidDto>, PositionApiError> {
+) -> Result<Json<PositionResponseDto>, PositionApiError> {
     let user_id = UserUuid::from_str(&user.0)?;
-    let position_uuid = state
-        .service
-        .save(payload.to_new_position(user_id)?)
-        .await?;
-    Ok(Json(position_uuid.into()))
+    let position = payload.to_new_position(user_id)?;
+    state.service.save(position.clone()).await?;
+    Ok(Json(PositionResponseDto::from(&position)))
 }
 
 #[utoipa::path(

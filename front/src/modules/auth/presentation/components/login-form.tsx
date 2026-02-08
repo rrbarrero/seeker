@@ -1,11 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,39 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { LoginFormValues } from "../../domain/schema";
-import { loginSchema } from "../../domain/schema";
-import { authService } from "../../composition-root";
+import { useLoginForm } from "../hooks/use-login-form";
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(data: LoginFormValues) {
-    setIsLoading(true);
-    try {
-      await authService.login(data);
-      toast.success("Login successful", {
-        description: "Welcome back!",
-      });
-      router.push("/dashboard");
-    } catch (error) {
-      toast.error("Login failed", {
-        description: "Please check your email and password.",
-      });
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { form, onSubmit, isLoading } = useLoginForm();
 
   return (
     <Card className="mx-auto w-full max-w-md">
@@ -66,7 +31,7 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
