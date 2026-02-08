@@ -35,13 +35,13 @@ export class InMemoryPositionRepository implements PositionRepository {
     },
   ];
 
-  async getPositions(): Promise<Position[]> {
+  async getPositions(_token?: string): Promise<Position[]> {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));
     return [...this.positions];
   }
 
-  async createPosition(input: CreatePositionInput): Promise<Position> {
+  async createPosition(input: CreatePositionInput, _token?: string): Promise<Position> {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const newPosition: Position = {
@@ -56,5 +56,14 @@ export class InMemoryPositionRepository implements PositionRepository {
 
     this.positions.push(newPosition);
     return newPosition;
+  }
+
+  async getPositionById(id: string, _token?: string): Promise<Position> {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const position = this.positions.find((p) => p.id === id);
+    if (!position) {
+      throw new Error("Position not found");
+    }
+    return { ...position };
   }
 }

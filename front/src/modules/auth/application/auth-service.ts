@@ -17,11 +17,11 @@ export class AuthService {
     this.tokenRepository.save(response.access_token);
   }
 
-  logout(): void {
-    this.tokenRepository.remove();
-  }
-
   getToken(): string | null {
     return this.tokenRepository.get();
+  }
+
+  logout(): void {
+    this.tokenRepository.remove();
   }
 }
