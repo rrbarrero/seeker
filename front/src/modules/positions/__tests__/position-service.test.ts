@@ -148,11 +148,12 @@ describe("PositionService", () => {
   });
 
   describe("deletePosition", () => {
-    it("should mark position as deleted", async () => {
+    it("should remove position from repository", async () => {
       await positionService.deletePosition("1");
-      const position = await positionService.getPosition("1");
-      expect(position.deleted).toBe(true);
-      expect(position.deleted_at).toBeTruthy();
+      await expect(positionService.getPosition("1")).rejects.toThrow("Position not found");
+
+      const allPositions = await positionService.getPositions();
+      expect(allPositions).toHaveLength(1);
     });
   });
 
