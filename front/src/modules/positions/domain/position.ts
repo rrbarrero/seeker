@@ -2,13 +2,16 @@ import { DomainError } from "@/shared/domain/errors";
 import { AppliedDate } from "./value-objects/applied-date";
 import { PositionUrl } from "./value-objects/position-url";
 
-export type PositionStatus =
-  | "CvSent"
-  | "PhoneScreenScheduled"
-  | "TechnicalInterview"
-  | "OfferReceived"
-  | "Rejected"
-  | "Withdrawn";
+export const POSITION_STATUSES = [
+  "CvSent",
+  "PhoneScreenScheduled",
+  "TechnicalInterview",
+  "OfferReceived",
+  "Rejected",
+  "Withdrawn",
+] as const;
+
+export type PositionStatus = (typeof POSITION_STATUSES)[number];
 
 export interface PositionProps {
   id: string;

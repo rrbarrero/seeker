@@ -4,26 +4,31 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { UiErrorHandler } from "@/shared/presentation/error-handler";
 import { positionService } from "../../composition-root";
-import type { PositionStatus } from "../../domain/position";
+import { POSITION_STATUSES, type PositionStatus } from "../../domain/position";
+import { PositionUrl } from "../../domain/value-objects/position-url";
 
 const formSchema = z.object({
   company: z.string().min(1, "Company is required"),
   roleTitle: z.string().min(1, "Role title is required"),
   description: z.string().min(1, "Description is required"),
   appliedOn: z.string().min(1, "Date is required"),
-  url: z.string().refine((val) => val === "" || /^https?:\/\/.+/.test(val), {
-    message: "Must be a valid URL",
-  }),
+  url: z.string().refine(
+    (val) => {
+      if (val === "") return true;
+      try {
+        new PositionUrl(val);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "Must be a valid URL" },
+  ),
   initialComment: z.string(),
-  status: z.enum([
-    "CvSent",
-    "PhoneScreenScheduled",
-    "TechnicalInterview",
-    "OfferReceived",
-    "Rejected",
-    "Withdrawn",
-  ] as [string, ...string[]]),
+  status: z.enum(POSITION_STATUSES),
 });
+
+export const createPositionFormSchema = formSchema;
 
 export type CreatePositionFormValues = z.infer<typeof formSchema>;
 
