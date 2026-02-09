@@ -12,17 +12,17 @@ export type PositionStatus =
 
 export interface PositionProps {
   id: string;
-  user_id: string;
+  userId: string;
   company: string;
-  role_title: string;
+  roleTitle: string;
   description: string;
-  applied_on: string;
+  appliedOn: string;
   url: string;
-  initial_comment: string;
+  initialComment: string;
   status: PositionStatus;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
   deleted: boolean;
 }
 
@@ -32,7 +32,7 @@ export class Position {
 
   constructor(private readonly props: PositionProps) {
     this.validate();
-    this._applied_on = new AppliedDate(props.applied_on);
+    this._applied_on = new AppliedDate(props.appliedOn);
     this._url = new PositionUrl(props.url);
   }
 
@@ -40,7 +40,7 @@ export class Position {
     if (!this.props.company || this.props.company.trim() === "") {
       throw new DomainError("Company name is required", "MISSING_COMPANY");
     }
-    if (!this.props.role_title || this.props.role_title.trim() === "") {
+    if (!this.props.roleTitle || this.props.roleTitle.trim() === "") {
       throw new DomainError("Role title is required", "MISSING_ROLE_TITLE");
     }
   }
@@ -48,38 +48,38 @@ export class Position {
   get id(): string {
     return this.props.id;
   }
-  get user_id(): string {
-    return this.props.user_id;
+  get userId(): string {
+    return this.props.userId;
   }
   get company(): string {
     return this.props.company;
   }
-  get role_title(): string {
-    return this.props.role_title;
+  get roleTitle(): string {
+    return this.props.roleTitle;
   }
   get description(): string {
     return this.props.description;
   }
-  get applied_on(): string {
+  get appliedOn(): string {
     return this._applied_on.value;
   }
   get url(): string {
     return this._url.value;
   }
-  get initial_comment(): string {
-    return this.props.initial_comment;
+  get initialComment(): string {
+    return this.props.initialComment;
   }
   get status(): PositionStatus {
     return this.props.status;
   }
-  get created_at(): string {
-    return this.props.created_at;
+  get createdAt(): string {
+    return this.props.createdAt;
   }
-  get updated_at(): string {
-    return this.props.updated_at;
+  get updatedAt(): string {
+    return this.props.updatedAt;
   }
-  get deleted_at(): string | null {
-    return this.props.deleted_at;
+  get deletedAt(): string | null {
+    return this.props.deletedAt;
   }
   get deleted(): boolean {
     return this.props.deleted;
@@ -133,7 +133,7 @@ export class Position {
 
   public update(
     props: Partial<
-      Omit<PositionProps, "id" | "user_id" | "created_at" | "updated_at" | "deleted" | "deleted_at">
+      Omit<PositionProps, "id" | "userId" | "createdAt" | "updatedAt" | "deleted" | "deletedAt">
     >,
   ): void {
     if (!this.canBeEdited()) {
@@ -141,17 +141,17 @@ export class Position {
     }
 
     if (props.company !== undefined) this.props.company = props.company;
-    if (props.role_title !== undefined) this.props.role_title = props.role_title;
+    if (props.roleTitle !== undefined) this.props.roleTitle = props.roleTitle;
     if (props.description !== undefined) this.props.description = props.description;
     if (props.url !== undefined) {
       this._url = new PositionUrl(props.url); // Re-validate
       this.props.url = props.url;
     }
-    if (props.applied_on !== undefined) {
-      this._applied_on = new AppliedDate(props.applied_on); // Re-validate
-      this.props.applied_on = props.applied_on;
+    if (props.appliedOn !== undefined) {
+      this._applied_on = new AppliedDate(props.appliedOn); // Re-validate
+      this.props.appliedOn = props.appliedOn;
     }
-    if (props.initial_comment !== undefined) this.props.initial_comment = props.initial_comment;
+    if (props.initialComment !== undefined) this.props.initialComment = props.initialComment;
 
     this.validate();
     this.touch();
@@ -159,12 +159,12 @@ export class Position {
 
   public delete(): void {
     this.props.deleted = true;
-    this.props.deleted_at = new Date().toISOString();
+    this.props.deletedAt = new Date().toISOString();
     this.touch();
   }
 
   private touch(): void {
-    this.props.updated_at = new Date().toISOString();
+    this.props.updatedAt = new Date().toISOString();
   }
 
   public static fromPrimitives(props: PositionProps): Position {
@@ -178,5 +178,5 @@ export class Position {
 
 export type CreatePositionInput = Omit<
   PositionProps,
-  "id" | "user_id" | "created_at" | "updated_at" | "deleted_at" | "deleted"
+  "id" | "userId" | "createdAt" | "updatedAt" | "deletedAt" | "deleted"
 >;

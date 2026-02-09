@@ -4,6 +4,74 @@ import type { TokenRepository } from "@/modules/auth/domain/token-repository";
 import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
 
+type PositionDto = {
+  id: string;
+  user_id: string;
+  company: string;
+  role_title: string;
+  description: string;
+  applied_on: string;
+  url: string;
+  initial_comment: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  deleted: boolean;
+};
+
+type CreatePositionDto = {
+  company: string;
+  role_title: string;
+  description: string;
+  applied_on: string;
+  url: string;
+  initial_comment: string;
+  status: string;
+};
+
+const toDomainProps = (dto: PositionDto): PositionProps => ({
+  id: dto.id,
+  userId: dto.user_id,
+  company: dto.company,
+  roleTitle: dto.role_title,
+  description: dto.description,
+  appliedOn: dto.applied_on,
+  url: dto.url,
+  initialComment: dto.initial_comment,
+  status: dto.status as PositionProps["status"],
+  createdAt: dto.created_at,
+  updatedAt: dto.updated_at,
+  deletedAt: dto.deleted_at,
+  deleted: dto.deleted,
+});
+
+const toDto = (props: PositionProps): PositionDto => ({
+  id: props.id,
+  user_id: props.userId,
+  company: props.company,
+  role_title: props.roleTitle,
+  description: props.description,
+  applied_on: props.appliedOn,
+  url: props.url,
+  initial_comment: props.initialComment,
+  status: props.status,
+  created_at: props.createdAt,
+  updated_at: props.updatedAt,
+  deleted_at: props.deletedAt,
+  deleted: props.deleted,
+});
+
+const toCreateDto = (input: CreatePositionInput): CreatePositionDto => ({
+  company: input.company,
+  role_title: input.roleTitle,
+  description: input.description,
+  applied_on: input.appliedOn,
+  url: input.url,
+  initial_comment: input.initialComment,
+  status: input.status,
+});
+
 export class ApiPositionRepository implements PositionRepository {
   constructor(private readonly tokenRepository: TokenRepository) {}
 
@@ -33,8 +101,8 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const data: PositionProps[] = await response.json();
-    return data.map((props) => Position.fromPrimitives(props));
+    const data: PositionDto[] = await response.json();
+    return data.map((dto) => Position.fromPrimitives(toDomainProps(dto)));
   }
 
   async createPosition(position: CreatePositionInput, providedToken?: string): Promise<Position> {
@@ -50,7 +118,7 @@ export class ApiPositionRepository implements PositionRepository {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(position),
+      body: JSON.stringify(toCreateDto(position)),
     });
 
     if (!response.ok) {
@@ -64,8 +132,8 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const props: PositionProps = await response.json();
-    return Position.fromPrimitives(props);
+    const dto: PositionDto = await response.json();
+    return Position.fromPrimitives(toDomainProps(dto));
   }
 
   async getPositionById(id: string, providedToken?: string): Promise<Position> {
@@ -97,8 +165,8 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const props: PositionProps = await response.json();
-    return Position.fromPrimitives(props);
+    const dto: PositionDto = await response.json();
+    return Position.fromPrimitives(toDomainProps(dto));
   }
 
   async save(position: Position, providedToken?: string): Promise<void> {
@@ -114,7 +182,7 @@ export class ApiPositionRepository implements PositionRepository {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(position.toPrimitives()),
+      body: JSON.stringify(toDto(position.toPrimitives())),
     });
 
     if (!response.ok) {

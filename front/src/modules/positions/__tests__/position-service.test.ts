@@ -13,43 +13,43 @@ describe("PositionService", () => {
     mockPositions = [
       Position.fromPrimitives({
         id: "1",
-        user_id: "user1",
+        userId: "user1",
         company: "Acme Corp",
-        role_title: "Senior Developer",
+        roleTitle: "Senior Developer",
         description: "A great opportunity",
-        applied_on: "2024-01-15T00:00:00Z",
+        appliedOn: "2024-01-15T00:00:00Z",
         url: "https://acme.com/jobs/1",
-        initial_comment: "Excited about this role",
+        initialComment: "Excited about this role",
         status: "CvSent",
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T10:00:00Z",
-        deleted_at: null,
+        createdAt: "2024-01-15T10:00:00Z",
+        updatedAt: "2024-01-15T10:00:00Z",
+        deletedAt: null,
         deleted: false,
       }),
       Position.fromPrimitives({
         id: "2",
-        user_id: "user1",
+        userId: "user1",
         company: "Tech Inc",
-        role_title: "Frontend Engineer",
+        roleTitle: "Frontend Engineer",
         description: "React position",
-        applied_on: "2024-01-20T00:00:00Z",
+        appliedOn: "2024-01-20T00:00:00Z",
         url: "https://tech.com/jobs/2",
-        initial_comment: "Good culture fit",
+        initialComment: "Good culture fit",
         status: "TechnicalInterview",
-        created_at: "2024-01-20T10:00:00Z",
-        updated_at: "2024-01-20T10:00:00Z",
-        deleted_at: null,
+        createdAt: "2024-01-20T10:00:00Z",
+        updatedAt: "2024-01-20T10:00:00Z",
+        deletedAt: null,
         deleted: false,
       }),
     ];
 
     mockCreatePositionInput = {
       company: "New Company",
-      role_title: "Junior Developer",
+      roleTitle: "Junior Developer",
       description: "Entry level position",
-      applied_on: "2024-02-01T00:00:00Z",
+      appliedOn: "2024-02-01T00:00:00Z",
       url: "https://newcompany.com/jobs/1",
-      initial_comment: "First job application",
+      initialComment: "First job application",
       status: "CvSent",
     };
 
@@ -80,7 +80,7 @@ describe("PositionService", () => {
       const result = await positionService.createPosition(mockCreatePositionInput, "test-token");
 
       expect(result.company).toBe(mockCreatePositionInput.company);
-      expect(result.role_title).toBe(mockCreatePositionInput.role_title);
+      expect(result.roleTitle).toBe(mockCreatePositionInput.roleTitle);
 
       // Verify it was actually saved in the repo
       const allPositions = await repository.getPositions();
@@ -115,12 +115,12 @@ describe("PositionService", () => {
     it("should update position fields and save to repo", async () => {
       await positionService.updatePosition("1", {
         company: "Updated Acme",
-        role_title: "Tech Lead",
+        roleTitle: "Tech Lead",
       });
 
       const updated = await positionService.getPosition("1");
       expect(updated.company).toBe("Updated Acme");
-      expect(updated.role_title).toBe("Tech Lead");
+      expect(updated.roleTitle).toBe("Tech Lead");
       // Original fields should remain
       expect(updated.description).toBe("A great opportunity");
     });

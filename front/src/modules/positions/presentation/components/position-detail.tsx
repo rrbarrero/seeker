@@ -63,7 +63,7 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-3xl font-bold tracking-tight">
-                    {position.role_title}
+                    {position.roleTitle}
                   </CardTitle>
                   <div className="text-muted-foreground flex items-center gap-2 text-xl">
                     <Building2 className="h-5 w-5" />
@@ -88,14 +88,14 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
                 </div>
               </div>
 
-              {position.initial_comment && (
+              {position.initialComment && (
                 <div className="space-y-2">
                   <h3 className="flex items-center gap-2 text-lg font-semibold">
                     <MessageSquare className="text-primary h-5 w-5" />
                     Initial Comments
                   </h3>
                   <div className="bg-primary/5 border-primary/10 rounded-lg border p-4 text-zinc-600 italic dark:text-zinc-400">
-                    &ldquo;{position.initial_comment}&rdquo;
+                    &ldquo;{position.initialComment}&rdquo;
                   </div>
                 </div>
               )}
@@ -142,7 +142,7 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
                   Record Created
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {new Date(position.created_at).toLocaleString()}
+                  {new Date(position.createdAt).toLocaleString()}
                 </p>
               </div>
             </CardContent>
@@ -172,7 +172,7 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the position for{" "}
               <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                {position.role_title}
+                {position.roleTitle}
               </span>{" "}
               at{" "}
               <span className="font-semibold text-zinc-900 dark:text-zinc-100">

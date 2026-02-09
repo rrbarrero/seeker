@@ -43,7 +43,7 @@ export function CreatePositionForm({ onSuccess }: CreatePositionFormProps) {
             />
             <FormField
               control={form.control}
-              name="role_title"
+              name="roleTitle"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role Title</FormLabel>
@@ -56,7 +56,7 @@ export function CreatePositionForm({ onSuccess }: CreatePositionFormProps) {
             />
             <FormField
               control={form.control}
-              name="applied_on"
+              name="appliedOn"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Applied On</FormLabel>

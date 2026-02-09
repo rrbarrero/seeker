@@ -8,13 +8,13 @@ import type { PositionStatus } from "../../domain/position";
 
 const formSchema = z.object({
   company: z.string().min(1, "Company is required"),
-  role_title: z.string().min(1, "Role title is required"),
+  roleTitle: z.string().min(1, "Role title is required"),
   description: z.string().min(1, "Description is required"),
-  applied_on: z.string().min(1, "Date is required"),
+  appliedOn: z.string().min(1, "Date is required"),
   url: z.string().refine((val) => val === "" || /^https?:\/\/.+/.test(val), {
     message: "Must be a valid URL",
   }),
-  initial_comment: z.string(),
+  initialComment: z.string(),
   status: z.enum([
     "CvSent",
     "PhoneScreenScheduled",
@@ -36,25 +36,25 @@ export function useCreatePositionForm({ onSuccess }: UseCreatePositionFormProps)
     resolver: zodResolver(formSchema),
     defaultValues: {
       company: "",
-      role_title: "",
+      roleTitle: "",
       description: "",
-      applied_on: new Date().toISOString().split("T")[0],
+      appliedOn: new Date().toISOString().split("T")[0],
       url: "",
-      initial_comment: "",
+      initialComment: "",
       status: "CvSent",
     },
   });
 
   const onSubmit = async (values: CreatePositionFormValues) => {
     try {
-      const rfcDate = new Date(values.applied_on).toUTCString();
+      const rfcDate = new Date(values.appliedOn).toUTCString();
 
       await positionService.createPosition({
         ...values,
         description: values.description,
-        initial_comment: values.initial_comment,
+        initialComment: values.initialComment,
         url: values.url,
-        applied_on: rfcDate,
+        appliedOn: rfcDate,
         status: values.status as PositionStatus,
       });
       toast.success("Position created successfully");

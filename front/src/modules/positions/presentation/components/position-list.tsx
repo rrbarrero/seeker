@@ -36,7 +36,7 @@ export function PositionList({ positions: positionsProps }: PositionListProps) {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex flex-col gap-1">
-                <CardTitle className="text-lg">{position.role_title}</CardTitle>
+                <CardTitle className="text-lg">{position.roleTitle}</CardTitle>
                 <CardDescription>{position.company}</CardDescription>
               </div>
               <div className="bg-secondary text-secondary-foreground rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap">

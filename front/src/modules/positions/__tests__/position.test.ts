@@ -5,17 +5,17 @@ import { DomainError } from "@/shared/domain/errors";
 describe("Position Entity", () => {
   const validProps: PositionProps = {
     id: "1",
-    user_id: "user-1",
+    userId: "user-1",
     company: "Acme Corp",
-    role_title: "Developer",
+    roleTitle: "Developer",
     description: "Cool job",
-    applied_on: "2024-01-15",
+    appliedOn: "2024-01-15",
     url: "https://acme.at/jobs",
-    initial_comment: "Applied",
+    initialComment: "Applied",
     status: "CvSent",
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z",
-    deleted_at: null,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
+    deletedAt: null,
     deleted: false,
   };
 
@@ -37,7 +37,7 @@ describe("Position Entity", () => {
   });
 
   it("should throw DomainError if role_title is missing", () => {
-    const props = { ...validProps, role_title: " " };
+    const props = { ...validProps, roleTitle: " " };
     expect(() => Position.fromPrimitives(props)).toThrow(DomainError);
     try {
       Position.fromPrimitives(props);
@@ -69,7 +69,7 @@ describe("Position Entity", () => {
       const position = Position.fromPrimitives({ ...validProps });
       position.advanceStatus("PhoneScreenScheduled");
       expect(position.status).toBe("PhoneScreenScheduled");
-      expect(position.updated_at).not.toBe(validProps.updated_at);
+      expect(position.updatedAt).not.toBe(validProps.updatedAt);
     });
 
     it("should allow transition to Rejected", () => {
@@ -98,10 +98,10 @@ describe("Position Entity", () => {
   describe("update", () => {
     it("should update allowed fields", () => {
       const position = Position.fromPrimitives({ ...validProps });
-      position.update({ company: "New Corp", role_title: "Lead Dev" });
+      position.update({ company: "New Corp", roleTitle: "Lead Dev" });
       expect(position.company).toBe("New Corp");
-      expect(position.role_title).toBe("Lead Dev");
-      expect(position.updated_at).not.toBe(validProps.updated_at);
+      expect(position.roleTitle).toBe("Lead Dev");
+      expect(position.updatedAt).not.toBe(validProps.updatedAt);
     });
 
     it("should throw error if update makes entity invalid", () => {
@@ -120,7 +120,7 @@ describe("Position Entity", () => {
       const position = Position.fromPrimitives({ ...validProps });
       position.delete();
       expect(position.deleted).toBe(true);
-      expect(position.deleted_at).not.toBeNull();
+      expect(position.deletedAt).not.toBeNull();
     });
   });
 });

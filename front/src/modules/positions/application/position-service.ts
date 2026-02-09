@@ -24,7 +24,7 @@ export class PositionService {
   async updatePosition(
     id: string,
     changes: Partial<
-      Omit<PositionProps, "id" | "user_id" | "created_at" | "updated_at" | "deleted" | "deleted_at">
+      Omit<PositionProps, "id" | "userId" | "createdAt" | "updatedAt" | "deleted" | "deletedAt">
     >,
     token?: string,
   ): Promise<void> {
