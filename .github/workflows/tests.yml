@@ -39,12 +39,13 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Cache Cargo
+      - name: Cache Cargo registry and build
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -53,17 +54,20 @@ jobs:
       - name: Run fmt
         run: cargo fmt -- --check
 
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres
+      # Install tools in parallel, using cache when available
+      - name: Install tools (cached)
+        run: |
+          command -v sqlx || cargo install sqlx-cli --no-default-features --features postgres &
+          command -v cargo-audit || cargo install cargo-audit &
+          command -v cargo-tarpaulin || cargo install cargo-tarpaulin &
+          wait
 
       - name: Run migrations
         run: cargo sqlx migrate run
 
-      - name: Cargo Check
-        run: cargo check
-
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
+      # clippy already runs check internally, so cargo check is redundant
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Security audit
         run: |
@@ -71,16 +75,10 @@ jobs:
           # We ignore it to allow CI to pass while blocking other vulnerabilities.
           cargo audit --ignore RUSTSEC-2023-0071
 
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
       - name: Run lint (DDD Fitness Test)
         run: |
           chmod +x scripts/ddd-fitness-test.sh
           ./scripts/ddd-fitness-test.sh
-
-      - name: Install Tarpaulin
-        run: cargo install cargo-tarpaulin
 
       - name: Code coverage and tests (Tarpaulin)
         run: cargo tarpaulin --fail-under 80 --out Xml
