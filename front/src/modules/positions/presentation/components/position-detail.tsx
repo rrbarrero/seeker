@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,18 +9,37 @@ import {
   Building2,
   Briefcase,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Position, type PositionProps } from "../../domain/position";
+import { useDeletePosition } from "../hooks/use-delete-position";
 
 interface PositionDetailProps {
   position: PositionProps;
 }
 
 export function PositionDetail({ position: props }: PositionDetailProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const router = useRouter();
+  const { deletePosition, isDeleting } = useDeletePosition();
   const position = Position.fromPrimitives(props);
+
+  const handleDelete = async () => {
+    await deletePosition(position.id);
+    setShowDeleteDialog(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -128,11 +148,51 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
             </CardContent>
           </Card>
 
-          <Button className="h-12 w-full text-lg font-semibold" disabled>
-            Edit (Coming Soon)
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button className="h-12 w-full text-lg font-semibold" disabled>
+              Edit (Coming Soon)
+            </Button>
+            <Button
+              variant="destructive"
+              className="h-12 w-full text-lg font-semibold"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-5 w-5" />
+              {isDeleting ? "Deleting..." : "Delete Position"}
+            </Button>
+          </div>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the position for{" "}
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {position.role_title}
+              </span>{" "}
+              at{" "}
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {position.company}
+              </span>
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Position"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

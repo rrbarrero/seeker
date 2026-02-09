@@ -111,6 +111,52 @@ describe("PositionService", () => {
     });
   });
 
+  describe("updatePosition", () => {
+    it("should update position fields and save to repo", async () => {
+      await positionService.updatePosition("1", {
+        company: "Updated Acme",
+        role_title: "Tech Lead",
+      });
+
+      const updated = await positionService.getPosition("1");
+      expect(updated.company).toBe("Updated Acme");
+      expect(updated.role_title).toBe("Tech Lead");
+      // Original fields should remain
+      expect(updated.description).toBe("A great opportunity");
+    });
+
+    it("should throw error if position to update not found", async () => {
+      await expect(positionService.updatePosition("999", { company: "X" })).rejects.toThrow(
+        "Position not found",
+      );
+    });
+  });
+
+  describe("changeStatus", () => {
+    it("should change status and save to repo", async () => {
+      await positionService.changeStatus("1", "PhoneScreenScheduled");
+      const updated = await positionService.getPosition("1");
+      expect(updated.status).toBe("PhoneScreenScheduled");
+    });
+
+    it("should throw domain error on invalid transition", async () => {
+      await expect(positionService.changeStatus("1", "Rejected")).resolves.not.toThrow();
+      await expect(positionService.changeStatus("1", "CvSent")).rejects.toThrow(
+        "Cannot transition from Rejected to CvSent",
+      );
+    });
+  });
+
+  describe("deletePosition", () => {
+    it("should remove position from repository", async () => {
+      await positionService.deletePosition("1");
+      await expect(positionService.getPosition("1")).rejects.toThrow("Position not found");
+
+      const allPositions = await positionService.getPositions();
+      expect(allPositions).toHaveLength(1);
+    });
+  });
+
   describe("integration behavior", () => {
     it("should maintain consistency across operations", async () => {
       const initialPositions = await positionService.getPositions();
