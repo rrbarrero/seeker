@@ -40,8 +40,6 @@ export class PositionService {
   }
 
   async deletePosition(id: string, token?: string): Promise<void> {
-    const position = await this.repository.getPositionById(id, token);
-    position.delete();
-    await this.repository.save(position, token);
+    await this.repository.delete(id, token);
   }
 }
