@@ -58,3 +58,60 @@ impl axum::response::IntoResponse for AuthError {
         (status, axum::Json(body)).into_response()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+
+    #[test]
+    fn test_invalid_email_creates_domain_error() {
+        let error = AuthError::invalid_email("bad@".to_string());
+        assert!(matches!(error, AuthError::DomainError(_)));
+    }
+
+    #[test]
+    fn test_invalid_password_creates_domain_error() {
+        let error = AuthError::invalid_password("weak".to_string());
+        assert!(matches!(error, AuthError::DomainError(_)));
+    }
+
+    #[test]
+    fn test_status_code_from_internal_error() {
+        let error = AuthError::InternalError("test".to_string());
+        assert_eq!(StatusCode::from(error), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_status_code_from_invalid_credentials() {
+        let error = AuthError::InvalidCredentials;
+        assert_eq!(StatusCode::from(error), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_from_user_already_exists() {
+        let error = AuthError::UserAlreadyExists;
+        assert_eq!(StatusCode::from(error), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_status_code_from_token_expired() {
+        let error = AuthError::TokenExpired;
+        assert_eq!(StatusCode::from(error), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_from_invalid_token() {
+        let error = AuthError::InvalidToken;
+        assert_eq!(StatusCode::from(error), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_auth_error_display() {
+        let error = AuthError::InvalidCredentials;
+        assert_eq!(
+            error.to_string(),
+            "Authentication failed: invalid credentials"
+        );
+    }
+}

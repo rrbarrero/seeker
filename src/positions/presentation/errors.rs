@@ -43,3 +43,45 @@ impl IntoResponse for PositionApiError {
         (status, Json(ApiErrorResponse { message })).into_response()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::Response;
+
+    fn response_status(response: Response<Body>) -> StatusCode {
+        response.status()
+    }
+
+    #[test]
+    fn test_position_not_found_response() {
+        let uuid = PositionUuid::new();
+        let error = PositionApiError::PositionNotFound(uuid);
+        let response = error.into_response();
+        assert_eq!(response_status(response), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn test_position_domain_error_response() {
+        let domain_error = PositionDomainError::InvalidStatus("bad".to_string());
+        let error = PositionApiError::from(domain_error);
+        let response = error.into_response();
+        assert_eq!(response_status(response), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_shared_domain_error_response() {
+        let shared_error = SharedDomainError::InvalidDate("bad-date".to_string());
+        let error = PositionApiError::from(shared_error);
+        let response = error.into_response();
+        assert_eq!(response_status(response), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_position_api_error_display() {
+        let uuid = PositionUuid::new();
+        let error = PositionApiError::PositionNotFound(uuid);
+        assert!(error.to_string().contains("Position not found"));
+    }
+}

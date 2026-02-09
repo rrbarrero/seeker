@@ -44,3 +44,60 @@ pub enum PositionRepoError {
     #[error("Position not found: `{0}`")]
     NotFound(PositionUuid),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_date_error() {
+        let error = PositionDomainError::invalid_date("bad-date".to_string());
+        assert!(matches!(error, PositionDomainError::Shared(_)));
+        assert!(error.to_string().contains("bad-date"));
+    }
+
+    #[test]
+    fn test_invalid_uuid_error() {
+        let error = PositionDomainError::invalid_uuid();
+        assert!(matches!(error, PositionDomainError::Shared(_)));
+    }
+
+    #[test]
+    fn test_invalid_status_error() {
+        let error = PositionDomainError::InvalidStatus("unknown".to_string());
+        assert_eq!(error.to_string(), "Invalid status: `unknown`");
+    }
+
+    #[test]
+    fn test_invalid_user_uuid_error() {
+        let error = PositionDomainError::InvalidUserUuid("bad-uuid".to_string());
+        assert_eq!(error.to_string(), "Invalid user uuid: `bad-uuid`");
+    }
+
+    #[test]
+    fn test_uuid_error_conversion() {
+        let uuid_error = uuid::Uuid::parse_str("invalid").unwrap_err();
+        let error = PositionDomainError::from(uuid_error);
+        assert!(matches!(error, PositionDomainError::Shared(_)));
+    }
+
+    #[test]
+    fn test_position_repo_database_error() {
+        let error = PositionRepoError::DatabaseError("connection failed".to_string());
+        assert_eq!(error.to_string(), "Database error: `connection failed`");
+    }
+
+    #[test]
+    fn test_position_repo_not_found_error() {
+        let position_id = PositionUuid::new();
+        let error = PositionRepoError::NotFound(position_id);
+        assert!(error.to_string().contains("Position not found"));
+    }
+
+    #[test]
+    fn test_position_repo_conversion_error() {
+        let domain_error = PositionDomainError::InvalidStatus("bad".to_string());
+        let error = PositionRepoError::from(domain_error);
+        assert!(matches!(error, PositionRepoError::ConversionError(_)));
+    }
+}
