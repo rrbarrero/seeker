@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const fetchPositions = useCallback(async () => {
     try {
       const data = await positionService.getPositions();
-      const primitives = data.map((p) => p.toPrimitives());
+      const primitives = data.filter((p) => !p.deleted).map((p) => p.toPrimitives());
       const sortedPositions = [...primitives].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );

@@ -75,4 +75,19 @@ export class InMemoryPositionRepository implements PositionRepository {
     }
     return position;
   }
+
+  async save(position: Position, _token?: string): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const index = this.positions.findIndex((p) => p.id === position.id);
+    if (index !== -1) {
+      this.positions[index] = position;
+    } else {
+      this.positions.push(position);
+    }
+  }
+
+  async delete(id: string, _token?: string): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    this.positions = this.positions.filter((p) => p.id !== id);
+  }
 }

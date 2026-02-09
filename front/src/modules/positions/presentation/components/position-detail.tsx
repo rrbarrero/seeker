@@ -8,10 +8,12 @@ import {
   Building2,
   Briefcase,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Position, type PositionProps } from "../../domain/position";
+import { useDeletePosition } from "../hooks/use-delete-position";
 
 interface PositionDetailProps {
   position: PositionProps;
@@ -19,7 +21,14 @@ interface PositionDetailProps {
 
 export function PositionDetail({ position: props }: PositionDetailProps) {
   const router = useRouter();
+  const { deletePosition, isDeleting } = useDeletePosition();
   const position = Position.fromPrimitives(props);
+
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this position?")) {
+      await deletePosition(position.id);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -128,9 +137,20 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
             </CardContent>
           </Card>
 
-          <Button className="h-12 w-full text-lg font-semibold" disabled>
-            Edit (Coming Soon)
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button className="h-12 w-full text-lg font-semibold" disabled>
+              Edit (Coming Soon)
+            </Button>
+            <Button
+              variant="destructive"
+              className="h-12 w-full text-lg font-semibold"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-5 w-5" />
+              {isDeleting ? "Deleting..." : "Delete Position"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

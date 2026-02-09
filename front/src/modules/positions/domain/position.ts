@@ -27,8 +27,8 @@ export interface PositionProps {
 }
 
 export class Position {
-  private readonly _applied_on: AppliedDate;
-  private readonly _url: PositionUrl;
+  private _applied_on: AppliedDate;
+  private _url: PositionUrl;
 
   constructor(private readonly props: PositionProps) {
     this.validate();
@@ -95,10 +95,26 @@ export class Position {
   }
 
   public advanceStatus(newStatus: PositionStatus): void {
+    if (this.props.status === newStatus) {
+      return;
+    }
+
     const forbiddenTransitions: Record<PositionStatus, PositionStatus[]> = {
-      Rejected: ["CvSent", "PhoneScreenScheduled", "TechnicalInterview", "OfferReceived"],
-      Withdrawn: ["CvSent", "PhoneScreenScheduled", "TechnicalInterview", "OfferReceived"],
-      OfferReceived: ["CvSent"],
+      Rejected: [
+        "CvSent",
+        "PhoneScreenScheduled",
+        "TechnicalInterview",
+        "OfferReceived",
+        "Withdrawn",
+      ], // Added Withdrawn
+      Withdrawn: [
+        "CvSent",
+        "PhoneScreenScheduled",
+        "TechnicalInterview",
+        "OfferReceived",
+        "Rejected",
+      ], // Added Rejected
+      OfferReceived: ["CvSent", "PhoneScreenScheduled", "TechnicalInterview"],
       CvSent: [],
       PhoneScreenScheduled: ["CvSent"],
       TechnicalInterview: ["CvSent", "PhoneScreenScheduled"],
@@ -110,6 +126,45 @@ export class Position {
         "INVALID_STATUS_TRANSITION",
       );
     }
+
+    this.props.status = newStatus;
+    this.touch();
+  }
+
+  public update(
+    props: Partial<
+      Omit<PositionProps, "id" | "user_id" | "created_at" | "updated_at" | "deleted" | "deleted_at">
+    >,
+  ): void {
+    if (!this.canBeEdited()) {
+      throw new DomainError("Cannot edit a deleted or finalized position", "POSITION_LOCKED");
+    }
+
+    if (props.company !== undefined) this.props.company = props.company;
+    if (props.role_title !== undefined) this.props.role_title = props.role_title;
+    if (props.description !== undefined) this.props.description = props.description;
+    if (props.url !== undefined) {
+      this._url = new PositionUrl(props.url); // Re-validate
+      this.props.url = props.url;
+    }
+    if (props.applied_on !== undefined) {
+      this._applied_on = new AppliedDate(props.applied_on); // Re-validate
+      this.props.applied_on = props.applied_on;
+    }
+    if (props.initial_comment !== undefined) this.props.initial_comment = props.initial_comment;
+
+    this.validate();
+    this.touch();
+  }
+
+  public delete(): void {
+    this.props.deleted = true;
+    this.props.deleted_at = new Date().toISOString();
+    this.touch();
+  }
+
+  private touch(): void {
+    this.props.updated_at = new Date().toISOString();
   }
 
   public static fromPrimitives(props: PositionProps): Position {

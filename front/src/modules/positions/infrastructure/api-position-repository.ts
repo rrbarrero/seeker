@@ -100,4 +100,64 @@ export class ApiPositionRepository implements PositionRepository {
     const props: PositionProps = await response.json();
     return Position.fromPrimitives(props);
   }
+
+  async save(position: Position, providedToken?: string): Promise<void> {
+    const token = providedToken || this.tokenRepository.get();
+
+    if (!token) {
+      throw new UnauthorizedError("No authentication token found");
+    }
+
+    const response = await fetch(`${getBaseUrl()}/positions/${position.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(position.toPrimitives()),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new UnauthorizedError();
+      }
+      if (response.status === 404) {
+        throw new NotFoundError("Position not found");
+      }
+      throw new InfrastructureError(
+        `Error saving position: ${response.statusText}`,
+        "SAVE_ERROR",
+        response.status,
+      );
+    }
+  }
+
+  async delete(id: string, providedToken?: string): Promise<void> {
+    const token = providedToken || this.tokenRepository.get();
+
+    if (!token) {
+      throw new UnauthorizedError("No authentication token found");
+    }
+
+    const response = await fetch(`${getBaseUrl()}/positions/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new UnauthorizedError();
+      }
+      if (response.status === 404) {
+        throw new NotFoundError("Position not found");
+      }
+      throw new InfrastructureError(
+        `Error deleting position: ${response.statusText}`,
+        "DELETE_ERROR",
+        response.status,
+      );
+    }
+  }
 }

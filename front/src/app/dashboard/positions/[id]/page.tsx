@@ -25,7 +25,7 @@ export default async function PositionPage({ params }: PageProps) {
     throw error;
   }
 
-  if (!position) {
+  if (!position || position.deleted) {
     notFound();
   }
 
