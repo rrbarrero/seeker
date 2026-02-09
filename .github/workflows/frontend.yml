@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  frontend-ci:
+    name: Frontend (Check & Build)
     runs-on: ubuntu-latest
 
     defaults:
@@ -22,24 +23,24 @@ jobs:
         with:
           version: 10
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
           cache-dependency-path: front/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install dependencies (Frontend)
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
+      - name: Lint (Frontend)
         run: pnpm lint:check
 
-      - name: Type check
+      - name: Type check (Frontend)
         run: pnpm type-check
 
-      - name: Run tests
+      - name: Run tests (Frontend)
         run: pnpm test
 
-      - name: Build
+      - name: Build (Frontend)
         run: pnpm build

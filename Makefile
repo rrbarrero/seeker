@@ -14,6 +14,9 @@ lint-rust:
 check-rust:
 	docker compose run --rm test /bin/bash -c "cargo fmt --check && cargo check && cargo clippy --all-targets --all-features -- -D warnings && chmod +x scripts/ddd-fitness-test.sh && ./scripts/ddd-fitness-test.sh && cargo test -- --test-threads=6"
 
+coverage-rust:
+	docker compose run --rm test cargo tarpaulin --config tarpaulin.toml --fail-under 80
+
 # Frontend Targets
 front-test:
 	cd front && pnpm vitest run
