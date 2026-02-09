@@ -1,5 +1,5 @@
-import { getBaseUrl } from "@/shared/api-config";
 import { InfrastructureError, NotFoundError, UnauthorizedError } from "@/shared/domain/errors";
+import { requestEmpty, requestJson } from "@/shared/http-client";
 import type { TokenRepository } from "@/modules/auth/domain/token-repository";
 import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
@@ -82,12 +82,9 @@ export class ApiPositionRepository implements PositionRepository {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const response = await fetch(`${getBaseUrl()}/positions`, {
+    const { response, data } = await requestJson<PositionDto[]>("/positions", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      token,
     });
 
     if (!response.ok) {
@@ -101,7 +98,10 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const data: PositionDto[] = await response.json();
+    if (!data) {
+      throw new InfrastructureError("Error fetching positions", "FETCH_ERROR", response.status);
+    }
+
     return data.map((dto) => Position.fromPrimitives(toDomainProps(dto)));
   }
 
@@ -112,13 +112,10 @@ export class ApiPositionRepository implements PositionRepository {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const response = await fetch(`${getBaseUrl()}/positions`, {
+    const { response, data: dto } = await requestJson<PositionDto>("/positions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(toCreateDto(position)),
+      token,
+      body: toCreateDto(position),
     });
 
     if (!response.ok) {
@@ -132,7 +129,10 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const dto: PositionDto = await response.json();
+    if (!dto) {
+      throw new InfrastructureError("Error creating position", "CREATE_ERROR", response.status);
+    }
+
     return Position.fromPrimitives(toDomainProps(dto));
   }
 
@@ -143,12 +143,9 @@ export class ApiPositionRepository implements PositionRepository {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const response = await fetch(`${getBaseUrl()}/positions/${id}`, {
+    const { response, data: dto } = await requestJson<PositionDto>(`/positions/${id}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      token,
     });
 
     if (!response.ok) {
@@ -165,7 +162,10 @@ export class ApiPositionRepository implements PositionRepository {
       );
     }
 
-    const dto: PositionDto = await response.json();
+    if (!dto) {
+      throw new InfrastructureError("Error fetching position", "FETCH_ONE_ERROR", response.status);
+    }
+
     return Position.fromPrimitives(toDomainProps(dto));
   }
 
@@ -176,13 +176,10 @@ export class ApiPositionRepository implements PositionRepository {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const response = await fetch(`${getBaseUrl()}/positions/${position.id}`, {
+    const { response } = await requestEmpty(`/positions/${position.id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(toDto(position.toPrimitives())),
+      token,
+      body: toDto(position.toPrimitives()),
     });
 
     if (!response.ok) {
@@ -207,11 +204,9 @@ export class ApiPositionRepository implements PositionRepository {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const response = await fetch(`${getBaseUrl()}/positions/${id}`, {
+    const { response } = await requestEmpty(`/positions/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      token,
     });
 
     if (!response.ok) {
