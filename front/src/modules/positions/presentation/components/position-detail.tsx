@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Position, type PositionProps } from "../../domain/position";
 import { useDeletePosition } from "../hooks/use-delete-position";
+import { UpdatePositionForm } from "./update-position-form";
 
 interface PositionDetailProps {
   position: PositionProps;
@@ -32,6 +33,7 @@ interface PositionDetailProps {
 
 export function PositionDetail({ position: props }: PositionDetailProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
   const { deletePosition, isDeleting } = useDeletePosition();
   const position = Position.fromPrimitives(props);
@@ -39,6 +41,11 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
   const handleDelete = async () => {
     await deletePosition(position.id);
     setShowDeleteDialog(false);
+  };
+
+  const handleUpdated = () => {
+    setIsEditing(false);
+    router.refresh();
   };
 
   return (
@@ -149,8 +156,12 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
           </Card>
 
           <div className="flex flex-col gap-3">
-            <Button className="h-12 w-full text-lg font-semibold" disabled>
-              Edit (Coming Soon)
+            <Button
+              className="h-12 w-full text-lg font-semibold"
+              onClick={() => setIsEditing((value) => !value)}
+              disabled={isDeleting}
+            >
+              {isEditing ? "Close Edit" : "Edit Position"}
             </Button>
             <Button
               variant="destructive"
@@ -162,6 +173,14 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
               {isDeleting ? "Deleting..." : "Delete Position"}
             </Button>
           </div>
+
+          {isEditing && (
+            <UpdatePositionForm
+              position={position.toPrimitives()}
+              onCancel={() => setIsEditing(false)}
+              onSuccess={handleUpdated}
+            />
+          )}
         </div>
       </div>
 

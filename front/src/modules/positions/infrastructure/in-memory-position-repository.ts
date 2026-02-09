@@ -1,4 +1,9 @@
-import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
+import {
+  Position,
+  type CreatePositionInput,
+  type PositionProps,
+  type UpdatePositionInput,
+} from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
 
 export class InMemoryPositionRepository implements PositionRepository {
@@ -76,14 +81,28 @@ export class InMemoryPositionRepository implements PositionRepository {
     return position;
   }
 
-  async save(position: Position, _token?: string): Promise<void> {
+  async updatePosition(id: string, input: UpdatePositionInput, _token?: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const index = this.positions.findIndex((p) => p.id === position.id);
-    if (index !== -1) {
-      this.positions[index] = position;
-    } else {
-      this.positions.push(position);
+    const index = this.positions.findIndex((p) => p.id === id);
+    const existing = this.positions[index];
+    if (!existing) {
+      throw new Error("Position not found");
     }
+
+    const props = existing.toPrimitives();
+    const updated = Position.fromPrimitives({
+      ...props,
+      company: input.company,
+      roleTitle: input.roleTitle,
+      description: input.description,
+      appliedOn: input.appliedOn,
+      url: input.url,
+      initialComment: input.initialComment,
+      status: input.status,
+      updatedAt: new Date().toISOString(),
+    });
+
+    this.positions[index] = updated;
   }
 
   async delete(id: string, _token?: string): Promise<void> {

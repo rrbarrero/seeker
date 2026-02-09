@@ -1,7 +1,12 @@
 import { InfrastructureError, NotFoundError, UnauthorizedError } from "@/shared/domain/errors";
 import { requestEmpty, requestJson } from "@/shared/http-client";
 import type { TokenRepository } from "@/modules/auth/domain/token-repository";
-import { Position, type CreatePositionInput, type PositionProps } from "../domain/position";
+import {
+  Position,
+  type CreatePositionInput,
+  type PositionProps,
+  type UpdatePositionInput,
+} from "../domain/position";
 import type { PositionRepository } from "../domain/position-repository";
 
 type PositionDto = {
@@ -46,23 +51,17 @@ const toDomainProps = (dto: PositionDto): PositionProps => ({
   deleted: dto.deleted,
 });
 
-const toDto = (props: PositionProps): PositionDto => ({
-  id: props.id,
-  user_id: props.userId,
-  company: props.company,
-  role_title: props.roleTitle,
-  description: props.description,
-  applied_on: props.appliedOn,
-  url: props.url,
-  initial_comment: props.initialComment,
-  status: props.status,
-  created_at: props.createdAt,
-  updated_at: props.updatedAt,
-  deleted_at: props.deletedAt,
-  deleted: props.deleted,
+const toCreateDto = (input: CreatePositionInput): CreatePositionDto => ({
+  company: input.company,
+  role_title: input.roleTitle,
+  description: input.description,
+  applied_on: input.appliedOn,
+  url: input.url,
+  initial_comment: input.initialComment,
+  status: input.status,
 });
 
-const toCreateDto = (input: CreatePositionInput): CreatePositionDto => ({
+const toUpdateDto = (input: UpdatePositionInput): CreatePositionDto => ({
   company: input.company,
   role_title: input.roleTitle,
   description: input.description,
@@ -169,17 +168,21 @@ export class ApiPositionRepository implements PositionRepository {
     return Position.fromPrimitives(toDomainProps(dto));
   }
 
-  async save(position: Position, providedToken?: string): Promise<void> {
+  async updatePosition(
+    id: string,
+    input: UpdatePositionInput,
+    providedToken?: string,
+  ): Promise<void> {
     const token = providedToken || this.tokenRepository.get();
 
     if (!token) {
       throw new UnauthorizedError("No authentication token found");
     }
 
-    const { response } = await requestEmpty(`/positions/${position.id}`, {
+    const { response } = await requestEmpty(`/positions/${id}`, {
       method: "PUT",
       token,
-      body: toDto(position.toPrimitives()),
+      body: toUpdateDto(input),
     });
 
     if (!response.ok) {

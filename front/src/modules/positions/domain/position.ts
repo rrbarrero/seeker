@@ -183,3 +183,5 @@ export type CreatePositionInput = Omit<
   PositionProps,
   "id" | "userId" | "createdAt" | "updatedAt" | "deletedAt" | "deleted"
 >;
+
+export type UpdatePositionInput = CreatePositionInput;

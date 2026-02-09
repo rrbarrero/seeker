@@ -11,20 +11,25 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCreatePositionForm } from "../hooks/use-create-position-form";
-import { POSITION_STATUSES } from "../../domain/position";
+import { POSITION_STATUSES, type PositionProps } from "../../domain/position";
+import { useUpdatePositionForm } from "../hooks/use-update-position-form";
 
-interface CreatePositionFormProps {
+interface UpdatePositionFormProps {
+  position: PositionProps;
+  onCancel: () => void;
   onSuccess: () => void;
 }
 
-export function CreatePositionForm({ onSuccess }: CreatePositionFormProps) {
-  const { form, onSubmit, isSubmitting } = useCreatePositionForm({ onSuccess });
+export function UpdatePositionForm({ position, onCancel, onSuccess }: UpdatePositionFormProps) {
+  const { form, onSubmit, isSubmitting } = useUpdatePositionForm({
+    position,
+    onSuccess,
+  });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Position</CardTitle>
+        <CardTitle>Edit Position</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -120,9 +125,31 @@ export function CreatePositionForm({ onSuccess }: CreatePositionFormProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Position"}
-            </Button>
+            <FormField
+              control={form.control}
+              name="initialComment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Initial Comment</FormLabel>
+                  <FormControl>
+                    <textarea
+                      className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Notes about the application..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
