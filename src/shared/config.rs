@@ -21,6 +21,9 @@ pub struct Config {
     jwt_secret: String,
     pub jwt_expiration_time: i64,
     pub allowed_origin: String,
+    pub otlp_endpoint: String,
+    pub observability_enabled: bool,
+    pub service_name: String,
 }
 
 impl Default for Config {
@@ -58,6 +61,14 @@ impl Default for Config {
                 .unwrap_or(60 * 60 * 3),
             allowed_origin: env::var("CORS_ALLOWED_ORIGIN")
                 .unwrap_or_else(|_| "http://localhost:3001".to_string()),
+            otlp_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+            observability_enabled: env::var("OBS_ENABLED")
+                .unwrap_or_else(|_| "false".to_string())
+                .to_lowercase()
+                .as_str()
+                == "true",
+            service_name: env::var("SERVICE_NAME").unwrap_or_else(|_| "best-seeker".to_string()),
         }
     }
 }
@@ -89,6 +100,9 @@ impl Config {
             jwt_secret: "secret".to_string(),
             jwt_expiration_time: 60 * 60 * 3,
             allowed_origin: "http://localhost:3001".to_string(),
+            otlp_endpoint: "http://localhost:4317".to_string(),
+            observability_enabled: false,
+            service_name: "best-seeker-test".to_string(),
         }
     }
 }

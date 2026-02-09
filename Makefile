@@ -1,4 +1,5 @@
 .PHONY: test format check prepare build run stop down logs front-test front-lint front-type-check front-format front-check
+ .PHONY: run-obs
 
 # Rust Targets
 test-rust:
@@ -47,6 +48,9 @@ build:
 
 run:
 	docker compose up --build
+
+run-obs:
+	docker compose -f docker-compose.yml -f docker/observability/docker-compose.observability.yml up --build
 
 stop:
 	docker compose stop
