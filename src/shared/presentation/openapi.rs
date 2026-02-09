@@ -5,7 +5,7 @@ use utoipa::{
 
 use crate::auth::presentation::dtos::{LoginDto, SignupDto, SuccesfullLoginDto, UserUuidDto};
 use crate::positions::presentation::dtos::{
-    PositionResponseDto, PositionUuidDto, SavePositionRequestDto,
+    PositionResponseDto, PositionUuidDto, SavePositionRequestDto, UpdatePositionRequestDto,
 };
 
 #[derive(OpenApi)]
@@ -16,6 +16,7 @@ use crate::positions::presentation::dtos::{
         crate::positions::presentation::handlers::get_positions,
         crate::positions::presentation::handlers::get_position,
         crate::positions::presentation::handlers::save_position,
+        crate::positions::presentation::handlers::update_position,
         crate::positions::presentation::handlers::remove_position,
     ),
     components(
@@ -26,7 +27,8 @@ use crate::positions::presentation::dtos::{
             UserUuidDto,
             PositionResponseDto,
             PositionUuidDto,
-            SavePositionRequestDto
+            SavePositionRequestDto,
+            UpdatePositionRequestDto
         )
     ),
     modifiers(&SecurityAddon),

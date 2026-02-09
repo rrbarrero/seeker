@@ -88,6 +88,34 @@ impl IPositionRepository for PositionPostgresRepository {
         Ok(position.id)
     }
 
+    async fn update(&self, position: Position) -> Result<(), PositionRepoError> {
+        let result = sqlx::query!(
+            "UPDATE positions SET company = $1, role_title = $2, description = $3, applied_on = $4, url = $5, initial_comment = $6, status = $7, updated_at = $8 WHERE id = $9",
+            position.company.value(),
+            position.role_title.value(),
+            position.description.value(),
+            position.applied_on.date(),
+            position.url.value(),
+            position.initial_comment.value(),
+            format!("{:?}", position.status),
+            position.updated_at.naive_utc(),
+            position.id.value(),
+        )
+        .execute(&self.pool)
+        .await;
+
+        match result {
+            Ok(result) => {
+                if result.rows_affected() == 0 {
+                    Err(PositionRepoError::NotFound(position.id))
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
+        }
+    }
+
     async fn get(&self, _position_id: PositionUuid) -> Result<Option<Position>, PositionRepoError> {
         let result = sqlx::query_as!(
             PositionRow,
@@ -210,6 +238,42 @@ mod tests {
         let positions = result.unwrap();
         assert!(!positions.is_empty());
         assert!(positions.iter().any(|p| p.user_id == user.id));
+    }
+
+    #[tokio::test]
+    async fn test_update_position_postgres_repository() {
+        let mut factory = TestFactory::new().await;
+
+        let user = factory.create_random_user().await;
+
+        let pool = factory.pool.clone();
+        let repository = PositionPostgresRepository::new(pool).await;
+
+        let mut position = create_fixture_position();
+        position.id = PositionUuid::new();
+        position.user_id = user.id;
+
+        factory.track_position(position.id.value());
+        repository
+            .save(position.clone())
+            .await
+            .expect("Should save position");
+
+        position.company = crate::positions::domain::entities::position::Company::new("Updated Co");
+        position.updated_at = chrono::Local::now();
+
+        repository
+            .update(position.clone())
+            .await
+            .expect("Should update position");
+
+        let updated = repository
+            .get(position.id)
+            .await
+            .expect("Should get position")
+            .expect("Position should exist");
+
+        assert_eq!(updated.company.value(), "Updated Co");
     }
 
     #[tokio::test]

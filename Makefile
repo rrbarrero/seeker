@@ -40,7 +40,7 @@ check: check-rust front-check
 
 prepare:
 	set -a && . ./.env && set +a && \
-	docker compose run --rm -e DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}" test cargo sqlx prepare
+	docker compose run --rm -e DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}" test cargo sqlx prepare -- --tests
 
 build:
 	docker compose build

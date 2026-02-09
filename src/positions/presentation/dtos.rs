@@ -103,3 +103,35 @@ impl SavePositionRequestDto {
         Ok(position)
     }
 }
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdatePositionRequestDto {
+    pub company: String,
+    pub role_title: String,
+    pub description: String,
+    pub applied_on: String,
+    pub url: String,
+    pub initial_comment: String,
+    pub status: String,
+}
+
+impl UpdatePositionRequestDto {
+    pub fn to_updated_position(&self, existing: Position) -> Result<Position, PositionApiError> {
+        let position = Position {
+            id: existing.id,
+            user_id: existing.user_id,
+            company: Company::new(&self.company),
+            role_title: RoleTitle::new(&self.role_title),
+            description: Description::new(&self.description),
+            applied_on: AppliedOn::new(&self.applied_on)?,
+            url: Url::new(&self.url),
+            initial_comment: InitialComment::new(&self.initial_comment),
+            status: PositionStatus::from_str(&self.status)?,
+            created_at: existing.created_at,
+            updated_at: chrono::Local::now(),
+            deleted_at: existing.deleted_at,
+            deleted: existing.deleted,
+        };
+        Ok(position)
+    }
+}

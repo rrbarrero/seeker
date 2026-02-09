@@ -57,6 +57,16 @@ impl IPositionRepository for PositionInMemoryRepository {
         self.positions.write().await.push(position);
         Ok(uuid)
     }
+
+    async fn update(&self, position: Position) -> Result<(), PositionRepoError> {
+        let mut positions = self.positions.write().await;
+        if let Some(existing) = positions.iter_mut().find(|p| p.id == position.id) {
+            *existing = position;
+            Ok(())
+        } else {
+            Err(PositionRepoError::NotFound(position.id))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -141,6 +151,26 @@ mod tests {
                 .len(),
             num_tasks
         );
+    }
+
+    #[tokio::test]
+    async fn test_update_position() {
+        let repo = create_positions_repo_for_testing(None).await;
+        let mut position = create_fixture_position();
+        let id = position.id;
+
+        let _ = repo.save(position.clone()).await;
+        position.company = crate::positions::domain::entities::position::Company::new("Updated");
+
+        repo.update(position).await.expect("Should update position");
+
+        let updated = repo
+            .get(id)
+            .await
+            .expect("Should get position")
+            .expect("Position should exist");
+
+        assert_eq!(updated.company.value(), "Updated");
     }
 
     #[tokio::test]

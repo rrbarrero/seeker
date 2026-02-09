@@ -31,6 +31,11 @@ impl PositionService {
         Ok(position_uuid)
     }
 
+    pub async fn update(&self, position: Position) -> Result<(), PositionServiceError> {
+        self.repo.update(position).await?;
+        Ok(())
+    }
+
     pub async fn remove(&self, position_uuid: PositionUuid) -> Result<(), PositionServiceError> {
         self.repo.remove(position_uuid).await?;
         Ok(())

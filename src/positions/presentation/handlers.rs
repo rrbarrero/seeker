@@ -2,7 +2,10 @@ use crate::{
     positions::{
         domain::entities::position::PositionUuid,
         presentation::{
-            dtos::{PositionResponseDto, PositionUuidDto, SavePositionRequestDto},
+            dtos::{
+                PositionResponseDto, PositionUuidDto, SavePositionRequestDto,
+                UpdatePositionRequestDto,
+            },
             errors::PositionApiError,
             routes::PositionState,
         },
@@ -90,6 +93,40 @@ pub async fn save_position(
     let position = payload.to_new_position(user_id)?;
     state.service.save(position.clone()).await?;
     Ok(Json(PositionResponseDto::from(&position)))
+}
+
+#[utoipa::path(
+    put,
+    path = "/positions/{id}",
+    params(
+        ("id" = String, Path, description = "Position ID")
+    ),
+    request_body = UpdatePositionRequestDto,
+    responses(
+        (status = 200, description = "Position updated", body = PositionResponseDto),
+        (status = 404, description = "Position not found"),
+        (status = 401, description = "Unauthorized")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Positions"
+)]
+pub async fn update_position(
+    _user: AuthenticatedUser,
+    State(state): State<PositionState>,
+    Path(position_id): Path<PositionUuidDto>,
+    Json(payload): Json<UpdatePositionRequestDto>,
+) -> Result<Json<PositionResponseDto>, PositionApiError> {
+    let id: PositionUuid = position_id.try_into()?;
+    let existing = state.service.get_position(id).await?;
+    let Some(existing) = existing else {
+        return Err(PositionApiError::PositionNotFound(id));
+    };
+
+    let updated = payload.to_updated_position(existing)?;
+    state.service.update(updated.clone()).await?;
+    Ok(Json(PositionResponseDto::from(&updated)))
 }
 
 #[utoipa::path(

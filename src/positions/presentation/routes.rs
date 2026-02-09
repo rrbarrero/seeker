@@ -3,13 +3,15 @@ use std::sync::Arc;
 use axum::{
     Router,
     extract::FromRef,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
 };
 
 use crate::{
     positions::{
         application::position_service::PositionService,
-        presentation::handlers::{get_position, get_positions, remove_position, save_position},
+        presentation::handlers::{
+            get_position, get_positions, remove_position, save_position, update_position,
+        },
     },
     shared::config::Config,
 };
@@ -38,6 +40,7 @@ pub fn create_position_routes(service: Arc<PositionService>, config: Arc<Config>
         .route("/", get(get_positions))
         .route("/{id}", get(get_position))
         .route("/", post(save_position))
+        .route("/{id}", put(update_position))
         .route("/{id}", delete(remove_position))
         .with_state(state)
 }
@@ -186,5 +189,45 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn test_update_position() {
+        let repo = PositionInMemoryRepository::default();
+        let position = PositionBuilder::new().with_role_title("Test Role").build();
+        let id = position.id;
+
+        let _ = repo.save(position).await;
+        let service = Arc::new(PositionService::new(Box::new(repo)));
+        let config = Arc::new(Config::test_default());
+        let app = create_position_routes(service, config.clone());
+
+        let body_json = r#"
+        {
+            "company": "Updated Co",
+            "role_title": "Updated Role",
+            "description": "Updated description",
+            "applied_on": "Fri, 27 Oct 2023 12:00:00 +0000",
+            "url": "https://example.com/jobs/1",
+            "initial_comment": "Updated comment",
+            "status": "CvSent"
+        }
+        "#;
+
+        let uri = format!("/{}", id);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(&uri)
+                    .header("content-type", "application/json")
+                    .header("Authorization", get_auth_header(&config))
+                    .body(Body::from(body_json))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }
