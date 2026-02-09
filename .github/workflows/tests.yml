@@ -25,15 +25,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/testdb
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/testdb
       ENVIRONMENT: testing
       SQLX_OFFLINE: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Configure DB Host
-        run: echo "127.0.0.1 db" | sudo tee -a /etc/hosts
 
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -55,7 +52,6 @@ jobs:
       - name: Check Formatting (rustfmt)
         run: cargo fmt -- --check
 
-      # Install tools in parallel, using cache when available
       - name: Install CI Tools (sqlx, audit, tarpaulin)
         run: |
           command -v sqlx || cargo install sqlx-cli --no-default-features --features postgres &
@@ -66,7 +62,6 @@ jobs:
       - name: Run Database Migrations
         run: cargo sqlx migrate run
 
-      # clippy already runs check internally, so cargo check is redundant
       - name: Run Linter (Clippy)
         run: cargo clippy --all-targets --all-features -- -D warnings
 
@@ -76,7 +71,7 @@ jobs:
           # We ignore it to allow CI to pass while blocking other vulnerabilities.
           cargo audit --ignore RUSTSEC-2023-0071
 
-      - name: Run Architecture Linter (DDD Fitness)
+      - name: Run Architecture Linter (DDD Fitness Test)
         run: |
           chmod +x scripts/ddd-fitness-test.sh
           ./scripts/ddd-fitness-test.sh

@@ -1,5 +1,6 @@
-[ignore]
-files = [
+name = "best-seeker"
+manifest-path = "Cargo.toml"
+exclude-files = [
     "src/main.rs",
     "src/shared/infrastructure/observability.rs",
     "src/shared/infrastructure/http/observability_middleware.rs",
