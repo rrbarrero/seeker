@@ -81,3 +81,85 @@ impl UserPassword {
         Ok(password_hash)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_uuid_new() {
+        let uuid1 = UserUuid::new();
+        let uuid2 = UserUuid::new();
+        assert_ne!(uuid1, uuid2);
+    }
+
+    #[test]
+    fn test_user_uuid_default() {
+        let uuid = UserUuid::default();
+        assert!(!uuid.to_string().is_empty());
+    }
+
+    #[test]
+    fn test_user_uuid_value() {
+        let uuid = UserUuid::new();
+        let value = uuid.value();
+        assert_eq!(value.to_string(), uuid.to_string());
+    }
+
+    #[test]
+    fn test_user_uuid_from_str_valid() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let result = UserUuid::from_str(uuid_str);
+        if let Ok(uuid) = result {
+            assert_eq!(uuid.to_string(), uuid_str);
+        } else {
+            panic!("Expected valid uuid");
+        }
+    }
+
+    #[test]
+    fn test_user_uuid_from_str_invalid() {
+        let result = UserUuid::from_str("invalid-uuid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_user_uuid_display() {
+        let uuid = UserUuid::new();
+        let display = format!("{}", uuid);
+        assert!(!display.is_empty());
+    }
+
+    #[test]
+    fn test_user_password_new_valid() {
+        let result = UserPassword::new("S0m3V3ryStr0ngP@ssw0rd!");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_user_password_new_weak() {
+        let result = UserPassword::new("weak");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_user_password_value() {
+        let password = UserPassword::set_password_already_hashed("hashed_value");
+        assert_eq!(password.value(), "hashed_value");
+    }
+
+    #[test]
+    fn test_user_password_set_already_hashed() {
+        let password = UserPassword::set_password_already_hashed("$argon2id$...");
+        assert_eq!(password.value(), "$argon2id$...");
+    }
+
+    #[test]
+    fn test_user_password_hash_password() {
+        let result = UserPassword::hash_password("S0m3V3ryStr0ngP@ssw0rd!");
+        match result {
+            Ok(hash) => assert!(hash.starts_with("$argon2")),
+            Err(_) => panic!("Expected successful hashing"),
+        }
+    }
+}

@@ -233,4 +233,25 @@ mod tests {
 
         assert!(matches!(result, Err(AuthExtractorError::InvalidToken)));
     }
+
+    #[test]
+    fn test_auth_extractor_error_response_token_expired() {
+        let error = AuthExtractorError::TokenExpired;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_auth_extractor_error_invalid_token() {
+        let error = AuthExtractorError::InvalidToken;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_auth_extractor_error_internal() {
+        let error = AuthExtractorError::InternalError("test".to_string());
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
 }
