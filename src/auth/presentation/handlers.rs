@@ -27,10 +27,10 @@ pub async fn login(
     State(service): State<Arc<AuthService>>,
     Json(payload): Json<LoginDto>,
 ) -> Result<Json<SuccesfullLoginDto>, AuthApiError> {
-    let (access_token, email_validated) = service.login(&payload.email, &payload.password).await?;
+    let response = service.login(&payload.email, &payload.password).await?;
     Ok(Json(SuccesfullLoginDto {
-        access_token,
-        email_validated,
+        access_token: response.token,
+        email_validated: response.is_email_verified,
     }))
 }
 

@@ -14,6 +14,12 @@ use crate::auth::application::email_queue_enqueuer::IEmailQueueEnqueuer;
 use crate::auth::application::token_generator::ITokenGenerator;
 use tracing::{error, info, warn};
 
+#[derive(Debug, PartialEq)]
+pub struct LoginResponse {
+    pub token: String,
+    pub is_email_verified: bool,
+}
+
 pub struct AuthService {
     user_repository: Box<dyn IUserRepository>,
     token_generator: Box<dyn ITokenGenerator>,
@@ -36,7 +42,7 @@ impl AuthService {
         }
     }
 
-    pub async fn login(&self, email: &str, password: &str) -> Result<(String, bool), AuthError> {
+    pub async fn login(&self, email: &str, password: &str) -> Result<LoginResponse, AuthError> {
         let user_email: UserEmail = UserEmail::new(email).map_err(AuthError::from)?;
         let user = self.user_repository.find_by_email(user_email).await;
         match user {
@@ -54,7 +60,10 @@ impl AuthService {
                         let token = self
                             .token_generator
                             .generate_token(&user.id.value().to_string(), user.email.value())?;
-                        Ok((token, user.email_validated))
+                        Ok(LoginResponse {
+                            token,
+                            is_email_verified: user.email_validated,
+                        })
                     }
                     Ok(false) => {
                         warn!(
@@ -133,15 +142,16 @@ impl AuthService {
             .user_repository
             .get(user_id)
             .await
-            .map_err(|e| AuthError::InternalError(e.to_string()))?
+            .map_err(|e: crate::auth::domain::errors::AuthRepoError| {
+                AuthError::InternalError(e.to_string())
+            })?
             .ok_or(AuthError::UserNotFound)?;
 
         user.validate_email();
 
-        self.user_repository
-            .update(&user)
-            .await
-            .map_err(|e| AuthError::InternalError(e.to_string()))?;
+        self.user_repository.update(&user).await.map_err(
+            |e: crate::auth::domain::errors::AuthRepoError| AuthError::InternalError(e.to_string()),
+        )?;
 
         info!(user_id = %user_id_str, "Email verified successfully");
         Ok(())
@@ -274,7 +284,11 @@ mod tests {
         let result = auth_service
             .login("test@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
             .await;
-        assert_eq!(result, Ok(("mock-token".to_string(), false)));
+
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.token, "mock-token");
+        assert!(!response.is_email_verified);
     }
 
     #[tokio::test]
