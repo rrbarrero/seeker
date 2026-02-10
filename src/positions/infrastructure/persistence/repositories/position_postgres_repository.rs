@@ -3,6 +3,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use sqlx::postgres::PgPool;
+use tracing::{error, warn};
 use uuid::Uuid;
 
 use crate::positions::domain::{
@@ -65,6 +66,8 @@ impl PositionPostgresRepository {
 #[async_trait]
 impl IPositionRepository for PositionPostgresRepository {
     async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepoError> {
+        let position_id = position.id;
+        let user_id = position.user_id;
         sqlx::query!(
             "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
             position.id.value(),
@@ -83,7 +86,16 @@ impl IPositionRepository for PositionPostgresRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| PositionRepoError::DatabaseError(e.to_string()))?;
+        .map_err(|e| {
+            error!(
+                position_id = %position_id.value(),
+                user_id = %user_id.value(),
+                error_kind = "database_error",
+                error = %e,
+                "position_repo.save failed"
+            );
+            PositionRepoError::DatabaseError(e.to_string())
+        })?;
 
         Ok(position.id)
     }
@@ -107,12 +119,26 @@ impl IPositionRepository for PositionPostgresRepository {
         match result {
             Ok(result) => {
                 if result.rows_affected() == 0 {
+                    warn!(
+                        position_id = %position.id.value(),
+                        error_kind = "not_found",
+                        "position_repo.update failed"
+                    );
                     Err(PositionRepoError::NotFound(position.id))
                 } else {
                     Ok(())
                 }
             }
-            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
+            Err(e) => {
+                error!(
+                    position_id = %position.id.value(),
+                    user_id = %position.user_id.value(),
+                    error_kind = "database_error",
+                    error = %e,
+                    "position_repo.update failed"
+                );
+                Err(PositionRepoError::DatabaseError(e.to_string()))
+            }
         }
     }
 
@@ -126,9 +152,27 @@ impl IPositionRepository for PositionPostgresRepository {
         .await;
 
         match result {
-            Ok(Some(row)) => Self::from_row(row).map(Some).map_err(Into::into),
+            Ok(Some(row)) => match Self::from_row(row) {
+                Ok(position) => Ok(Some(position)),
+                Err(err) => {
+                    error!(
+                        position_id = %_position_id.value(),
+                        error_kind = "conversion_error",
+                        "position_repo.get failed"
+                    );
+                    Err(PositionRepoError::from(err))
+                }
+            },
             Ok(None) => Ok(None),
-            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
+            Err(e) => {
+                error!(
+                    position_id = %_position_id.value(),
+                    error_kind = "database_error",
+                    error = %e,
+                    "position_repo.get failed"
+                );
+                Err(PositionRepoError::DatabaseError(e.to_string()))
+            }
         }
     }
 
@@ -142,8 +186,21 @@ impl IPositionRepository for PositionPostgresRepository {
                 .into_iter()
                 .map(Self::from_row)
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(Into::into),
-            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
+                .map_err(|err| {
+                    error!(
+                        error_kind = "conversion_error",
+                        "position_repo.get_all failed"
+                    );
+                    PositionRepoError::from(err)
+                }),
+            Err(e) => {
+                error!(
+                    error_kind = "database_error",
+                    error = %e,
+                    "position_repo.get_all failed"
+                );
+                Err(PositionRepoError::DatabaseError(e.to_string()))
+            }
         }
     }
 
@@ -157,7 +214,15 @@ impl IPositionRepository for PositionPostgresRepository {
 
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(PositionRepoError::DatabaseError(e.to_string())),
+            Err(e) => {
+                error!(
+                    position_id = %_position_uuid.value(),
+                    error_kind = "database_error",
+                    error = %e,
+                    "position_repo.remove failed"
+                );
+                Err(PositionRepoError::DatabaseError(e.to_string()))
+            }
         }
     }
 }

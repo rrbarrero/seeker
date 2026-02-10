@@ -88,6 +88,11 @@ where
 
         let config = Arc::<Config>::from_ref(state);
         let user_id = validate_token(token, &config)?;
+        if let Some(holder) = parts.extensions.get::<
+            crate::shared::infrastructure::http::observability_middleware::RequestUserId,
+        >() {
+            holder.set(user_id.clone());
+        }
         Ok(AuthenticatedUser(user_id))
     }
 }

@@ -1,3 +1,4 @@
+use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
 use axum::{body::Body, extract::State, http::Request, middleware::Next, response::Response};
@@ -8,15 +9,30 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::shared::infrastructure::observability::Observability;
 
+#[derive(Clone, Debug, Default)]
+pub struct RequestUserId(pub Arc<OnceLock<String>>);
+
+impl RequestUserId {
+    pub fn set(&self, user_id: String) {
+        let _ = self.0.set(user_id);
+    }
+
+    pub fn get(&self) -> Option<&str> {
+        self.0.get().map(|s| s.as_str())
+    }
+}
+
 pub async fn request_observability(
     State(obs): State<Observability>,
-    request: Request<Body>,
+    mut request: Request<Body>,
     next: Next,
 ) -> Response {
     let start = Instant::now();
 
     let method = request.method().to_string();
     let path = request.uri().path().to_string();
+    let user_id_holder = RequestUserId::default();
+    request.extensions_mut().insert(user_id_holder.clone());
     let request_id = request
         .extensions()
         .get::<RequestId>()
@@ -49,6 +65,7 @@ pub async fn request_observability(
         tracing::error!(
             request_id = %request_id,
             trace_id = %trace_id,
+            user_id = %user_id_holder.get().unwrap_or("-"),
             http.method = %method,
             http.route = %path,
             http.status_code = status,

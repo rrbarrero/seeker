@@ -10,6 +10,7 @@ use crate::auth::{
 use crate::shared::domain::value_objects::UserUuid;
 
 use crate::auth::application::token_generator::ITokenGenerator;
+use tracing::{error, warn};
 
 pub struct AuthService {
     user_repository: Box<dyn IUserRepository>,
@@ -35,18 +36,84 @@ impl AuthService {
                 Ok(true) => self
                     .token_generator
                     .generate_token(&user.id.value().to_string(), user.email.value()),
-                Ok(false) => Err(AuthError::InvalidCredentials),
-                Err(e) => Err(AuthError::from(e)),
+                Ok(false) => {
+                    warn!(
+                        error_kind = "invalid_credentials",
+                        "auth_service.login failed"
+                    );
+                    Err(AuthError::InvalidCredentials)
+                }
+                Err(e) => {
+                    warn!(
+                        error_kind = "password_verification_failed",
+                        error = %e,
+                        "auth_service.login failed"
+                    );
+                    Err(AuthError::from(e))
+                }
             },
-            _ => Err(AuthError::InvalidCredentials),
+            Ok(None) => {
+                warn!(
+                    error_kind = "invalid_credentials",
+                    "auth_service.login failed"
+                );
+                Err(AuthError::InvalidCredentials)
+            }
+            Err(err) => {
+                error!(
+                    error_kind = auth_repo_error_kind(&err),
+                    error = %err,
+                    "auth_service.login repository error"
+                );
+                Err(AuthError::InternalError(err.to_string()))
+            }
         }
     }
 
     pub async fn signup(&self, email: &str, password: &str) -> Result<UserUuid, AuthError> {
         let user_id = Uuid::new_v4().to_string();
-        let user = User::new(&user_id, email, password)?;
-        let user_id = self.user_repository.save(&user).await?;
-        Ok(user_id)
+        let user = match User::new(&user_id, email, password) {
+            Ok(user) => user,
+            Err(err) => {
+                warn!(
+                    error_kind = auth_domain_error_kind(&err),
+                    error = %err,
+                    "auth_service.signup failed"
+                );
+                return Err(AuthError::from(err));
+            }
+        };
+
+        match self.user_repository.save(&user).await {
+            Ok(user_id) => Ok(user_id),
+            Err(err) => {
+                let kind = auth_repo_error_kind(&err);
+                if kind == "user_already_exists" {
+                    warn!(error_kind = kind, error = %err, "auth_service.signup failed");
+                } else {
+                    error!(error_kind = kind, error = %err, "auth_service.signup failed");
+                }
+                Err(AuthError::from(err))
+            }
+        }
+    }
+}
+
+fn auth_domain_error_kind(err: &crate::auth::domain::errors::AuthDomainError) -> &'static str {
+    use crate::auth::domain::errors::AuthDomainError;
+    match err {
+        AuthDomainError::Shared(_) => "shared_domain_error",
+        AuthDomainError::InternalError(_) => "internal_error",
+    }
+}
+
+fn auth_repo_error_kind(err: &crate::auth::domain::errors::AuthRepoError) -> &'static str {
+    use crate::auth::domain::errors::AuthRepoError;
+    match err {
+        AuthRepoError::DatabaseError(_) => "database_error",
+        AuthRepoError::ConversionError(_) => "conversion_error",
+        AuthRepoError::NotFound(_) => "not_found",
+        AuthRepoError::UserAlreadyExists(_) => "user_already_exists",
     }
 }
 
