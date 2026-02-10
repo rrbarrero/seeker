@@ -83,7 +83,8 @@ async fn main() {
                     .get::<RequestId>()
                     .and_then(|id| id.header_value().to_str().ok())
                     .unwrap_or("-");
-                tracing::info_span!(
+                tracing::span!(
+                    tracing::Level::WARN,
                     "http_request",
                     request_id = %request_id,
                     http.method = %request.method(),

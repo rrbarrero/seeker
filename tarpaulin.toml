@@ -1,5 +1,4 @@
-name = "best-seeker"
-manifest-path = "Cargo.toml"
+[configs]
 exclude-files = [
     "src/main.rs",
     "src/shared/infrastructure/observability.rs",
