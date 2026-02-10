@@ -17,11 +17,14 @@ use crate::{
     shared::config::Config,
 };
 
+use crate::shared::infrastructure::http::auth_extractor::UserStatusChecker;
+
 #[derive(Clone)]
 pub struct PositionState {
     pub service: Arc<PositionService>,
     pub comment_service: Arc<CommentService>,
     pub config: Arc<Config>,
+    pub user_checker: Arc<dyn UserStatusChecker>,
 }
 
 impl FromRef<PositionState> for Arc<PositionService> {
@@ -42,15 +45,23 @@ impl FromRef<PositionState> for Arc<Config> {
     }
 }
 
+impl FromRef<PositionState> for Arc<dyn UserStatusChecker> {
+    fn from_ref(state: &PositionState) -> Self {
+        state.user_checker.clone()
+    }
+}
+
 pub fn create_position_routes(
     service: Arc<PositionService>,
     comment_service: Arc<CommentService>,
     config: Arc<Config>,
+    user_checker: Arc<dyn UserStatusChecker>,
 ) -> Router {
     let state = PositionState {
         service,
         comment_service,
         config,
+        user_checker,
     };
     Router::new()
         .route("/", get(get_positions))
@@ -70,6 +81,7 @@ mod tests {
         domain::repositories::position_repository::IPositionRepository,
         infrastructure::persistence::repositories::position_in_memory_repository::PositionInMemoryRepository,
     };
+
     use axum::{
         body::Body,
         http::{Request, StatusCode},
@@ -78,15 +90,32 @@ mod tests {
     use uuid::Uuid;
 
     // Helper to setup the router with an in-memory repository
-    fn setup_router() -> (Router, Arc<Config>) {
+    struct MockUserStatusChecker {
+        is_disabled: bool,
+    }
+
+    #[async_trait::async_trait]
+    impl UserStatusChecker for MockUserStatusChecker {
+        async fn is_account_disabled(&self, _user_id: &str) -> bool {
+            self.is_disabled
+        }
+    }
+
+    fn setup_router() -> (Router, Config) {
         let repo = PositionInMemoryRepository::default();
         let service = Arc::new(PositionService::new(Box::new(repo)));
         let comment_service = Arc::new(CommentService::new(Box::new(
             crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
         )));
-        let config = Arc::new(Config::test_default());
+        let config = Config::test_default();
+        let user_checker = Arc::new(MockUserStatusChecker { is_disabled: false });
         (
-            create_position_routes(service, comment_service, config.clone()),
+            create_position_routes(
+                service,
+                comment_service,
+                Arc::new(config.clone()),
+                user_checker,
+            ),
             config,
         )
     }
@@ -172,7 +201,8 @@ mod tests {
             crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
         )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, comment_service, config.clone());
+        let user_checker = Arc::new(MockUserStatusChecker { is_disabled: false });
+        let app = create_position_routes(service, comment_service, config.clone(), user_checker);
 
         let uri = format!("/{}", id);
         let response = app
@@ -201,7 +231,8 @@ mod tests {
             crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
         )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, comment_service, config.clone());
+        let user_checker = Arc::new(MockUserStatusChecker { is_disabled: false });
+        let app = create_position_routes(service, comment_service, config.clone(), user_checker);
 
         let uri = format!("/{}", id);
         let response = app
@@ -231,7 +262,8 @@ mod tests {
             crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
         )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, comment_service, config.clone());
+        let user_checker = Arc::new(MockUserStatusChecker { is_disabled: false });
+        let app = create_position_routes(service, comment_service, config.clone(), user_checker);
 
         let body_json = r#"
         {

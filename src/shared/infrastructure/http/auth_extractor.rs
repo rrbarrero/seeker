@@ -66,12 +66,18 @@ pub struct Claims {
     pub email: String,
 }
 
+#[async_trait::async_trait]
+pub trait UserStatusChecker: Send + Sync {
+    async fn is_account_disabled(&self, user_id: &str) -> bool;
+}
+
 pub struct AuthenticatedUser(pub String);
 
 impl<S> FromRequestParts<S> for AuthenticatedUser
 where
     S: Send + Sync,
     Arc<Config>: FromRef<S>,
+    Arc<dyn UserStatusChecker>: FromRef<S>,
 {
     type Rejection = AuthExtractorError;
 
@@ -88,6 +94,17 @@ where
 
         let config = Arc::<Config>::from_ref(state);
         let user_id = validate_token(token, &config)?;
+
+        let user_checker = Arc::<dyn UserStatusChecker>::from_ref(state);
+        if user_checker.is_account_disabled(&user_id).await {
+            tracing::warn!(
+                error_kind = "account_disabled",
+                user_id = %user_id,
+                "Account is disabled"
+            );
+            return Err(AuthExtractorError::InvalidToken);
+        }
+
         if let Some(holder) = parts.extensions.get::<
             crate::shared::infrastructure::http::observability_middleware::RequestUserId,
         >() {
@@ -170,13 +187,32 @@ mod tests {
     }
 
     #[derive(Clone)]
+    struct MockUserStatusChecker {
+        is_disabled: bool,
+    }
+
+    #[async_trait::async_trait]
+    impl UserStatusChecker for MockUserStatusChecker {
+        async fn is_account_disabled(&self, _user_id: &str) -> bool {
+            self.is_disabled
+        }
+    }
+
+    #[derive(Clone)]
     struct TestState {
         config: Arc<Config>,
+        user_checker: Arc<dyn UserStatusChecker>,
     }
 
     impl FromRef<TestState> for Arc<Config> {
         fn from_ref(state: &TestState) -> Self {
             state.config.clone()
+        }
+    }
+
+    impl FromRef<TestState> for Arc<dyn UserStatusChecker> {
+        fn from_ref(state: &TestState) -> Self {
+            state.user_checker.clone()
         }
     }
 
@@ -189,6 +225,7 @@ mod tests {
 
         let state = TestState {
             config: Arc::new(config),
+            user_checker: Arc::new(MockUserStatusChecker { is_disabled: false }),
         };
 
         let (mut parts, _) = axum::http::Request::builder()
@@ -205,10 +242,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_authenticated_user_extractor_account_disabled() {
+        let config = Config::test_default();
+        let sub = Uuid::new_v4().to_string();
+        let email = "test@test.com";
+        let token = create_jwt(&sub, email, &config).unwrap();
+
+        let state = TestState {
+            config: Arc::new(config),
+            user_checker: Arc::new(MockUserStatusChecker { is_disabled: true }),
+        };
+
+        let (mut parts, _) = axum::http::Request::builder()
+            .header(AUTHORIZATION, format!("Bearer {}", token))
+            .body(())
+            .unwrap()
+            .into_parts();
+
+        let result = AuthenticatedUser::from_request_parts(&mut parts, &state).await;
+
+        assert!(matches!(result, Err(AuthExtractorError::InvalidToken)));
+    }
+
+    #[tokio::test]
     async fn test_authenticated_user_extractor_invalid_token() {
         let config = Config::test_default();
         let state = TestState {
             config: Arc::new(config),
+            user_checker: Arc::new(MockUserStatusChecker { is_disabled: false }),
         };
 
         let (mut parts, _) = axum::http::Request::builder()
@@ -227,6 +288,7 @@ mod tests {
         let config = Config::test_default();
         let state = TestState {
             config: Arc::new(config),
+            user_checker: Arc::new(MockUserStatusChecker { is_disabled: false }),
         };
 
         let (mut parts, _) = axum::http::Request::builder()

@@ -40,29 +40,39 @@ impl AuthService {
         let user_email: UserEmail = UserEmail::new(email).map_err(AuthError::from)?;
         let user = self.user_repository.find_by_email(user_email).await;
         match user {
-            Ok(Some(user)) => match user.verify_password(password) {
-                Ok(true) => {
-                    let token = self
-                        .token_generator
-                        .generate_token(&user.id.value().to_string(), user.email.value())?;
-                    Ok((token, user.email_validated))
-                }
-                Ok(false) => {
+            Ok(Some(user)) => {
+                if user.account_disabled {
                     warn!(
-                        error_kind = "invalid_credentials",
-                        "auth_service.login failed"
+                        error_kind = "account_disabled",
+                        email = %user.email.value(),
+                        "Account is disabled"
                     );
-                    Err(AuthError::InvalidCredentials)
+                    return Err(AuthError::InvalidCredentials);
                 }
-                Err(e) => {
-                    warn!(
-                        error_kind = "password_verification_failed",
-                        error = %e,
-                        "auth_service.login failed"
-                    );
-                    Err(AuthError::from(e))
+                match user.verify_password(password) {
+                    Ok(true) => {
+                        let token = self
+                            .token_generator
+                            .generate_token(&user.id.value().to_string(), user.email.value())?;
+                        Ok((token, user.email_validated))
+                    }
+                    Ok(false) => {
+                        warn!(
+                            error_kind = "invalid_credentials",
+                            "auth_service.login failed"
+                        );
+                        Err(AuthError::InvalidCredentials)
+                    }
+                    Err(e) => {
+                        warn!(
+                            error_kind = "password_verification_failed",
+                            error = %e,
+                            "auth_service.login failed"
+                        );
+                        Err(AuthError::from(e))
+                    }
                 }
-            },
+            }
             Ok(None) => {
                 warn!(
                     error_kind = "invalid_credentials",
@@ -459,5 +469,30 @@ mod tests {
 
         let result = auth_service.verify_email("bad-token").await;
         assert_eq!(result, Err(AuthError::InvalidToken));
+    }
+    #[tokio::test]
+    async fn test_auth_service_login_account_disabled() {
+        let user_id = Uuid::new_v4();
+        let mut user = User::new(
+            &user_id.to_string(),
+            "disabled@example.com",
+            "S0m3V3ryStr0ngP@ssw0rd!",
+        )
+        .expect("Error creating user");
+        user.account_disabled = true;
+
+        let repo = Box::new(UserInMemoryRepository::default());
+        repo.save(&user).await.unwrap();
+        let auth_service = AuthService::new(
+            repo,
+            Box::new(MockTokenGenerator::new()),
+            Box::new(MockEmailQueue),
+            "http://localhost:3000".to_string(),
+        );
+
+        let result = auth_service
+            .login("disabled@example.com", "S0m3V3ryStr0ngP@ssw0rd!")
+            .await;
+        assert_eq!(result, Err(AuthError::InvalidCredentials));
     }
 }

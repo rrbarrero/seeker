@@ -24,7 +24,8 @@ async fn main() {
         composition_root::create_auth_service(user_repo, pool.clone(), config.clone()).await;
     let position_repo =
         Box::new(composition_root::create_position_postgres_repository(pool.clone()).await);
-    let comment_repo = Box::new(composition_root::create_comment_postgres_repository(pool).await);
+    let comment_repo =
+        Box::new(composition_root::create_comment_postgres_repository(pool.clone()).await);
     let position_service = composition_root::create_position_service(position_repo).await;
     let comment_service = composition_root::create_comment_service(comment_repo).await;
     let observability = if config.observability_enabled {
@@ -42,6 +43,14 @@ async fn main() {
         None
     };
 
+    let user_repo_checker =
+        Box::new(composition_root::create_user_postgres_repository(pool.clone()).await);
+    let user_checker = Arc::new(
+        auth::application::user_status_checker::UserStatusCheckerImpl::new(Arc::new(
+            user_repo_checker,
+        )),
+    );
+
     let app = Router::new()
         .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url(
             "/api-docs/openapi.json",
@@ -53,6 +62,7 @@ async fn main() {
                 Arc::new(position_service),
                 Arc::new(comment_service),
                 config.clone(),
+                user_checker,
             ),
         )
         .nest(

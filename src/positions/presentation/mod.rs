@@ -17,13 +17,16 @@ use crate::{
     shared::config::Config,
 };
 
+use crate::shared::infrastructure::http::auth_extractor::UserStatusChecker;
+
 pub fn build_router(
     service: Arc<PositionService>,
     comment_service: Arc<CommentService>,
     config: Arc<Config>,
+    user_checker: Arc<dyn UserStatusChecker>,
 ) -> Router {
     Router::new().nest(
         "/positions",
-        create_position_routes(service, comment_service, config),
+        create_position_routes(service, comment_service, config, user_checker),
     )
 }

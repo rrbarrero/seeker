@@ -47,6 +47,19 @@ mod tests {
         format!("Bearer {}", token)
     }
 
+    struct MockUserStatusChecker {
+        is_disabled: bool,
+    }
+
+    #[async_trait::async_trait]
+    impl crate::shared::infrastructure::http::auth_extractor::UserStatusChecker
+        for MockUserStatusChecker
+    {
+        async fn is_account_disabled(&self, _user_id: &str) -> bool {
+            self.is_disabled
+        }
+    }
+
     async fn setup_router_with_position(
         user_id: &Uuid,
     ) -> (
@@ -77,10 +90,12 @@ mod tests {
         let position_service = PositionService::new(position_repo);
         let comment_service = CommentService::new(comment_repo);
         let config = Config::test_default();
+        let user_checker = std::sync::Arc::new(MockUserStatusChecker { is_disabled: false });
         let app = create_position_routes(
             std::sync::Arc::new(position_service),
             std::sync::Arc::new(comment_service),
             std::sync::Arc::new(config.clone()),
+            user_checker,
         );
         (app, config, position_id)
     }
