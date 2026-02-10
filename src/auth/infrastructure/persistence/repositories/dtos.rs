@@ -10,6 +10,8 @@ pub struct UserDto {
     id: uuid::Uuid,
     email: String,
     password: String,
+    email_validated: bool,
+    account_disabled: bool,
     created_at: chrono::NaiveDateTime,
     updated_at: chrono::NaiveDateTime,
 }
@@ -20,6 +22,8 @@ impl UserDto {
             id: row.get("id"),
             email: row.get("email"),
             password: row.get("password"),
+            email_validated: row.get("email_validated"),
+            account_disabled: row.get("account_disabled"),
             created_at: row
                 .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
                 .naive_utc(),
@@ -34,6 +38,8 @@ impl UserDto {
             id: user.id.value(),
             email: user.email.value().to_string(),
             password: user.password().value().to_string(),
+            email_validated: user.email_validated,
+            account_disabled: user.account_disabled,
             created_at: user
                 .created
                 .and_hms_opt(0, 0, 0)
@@ -55,6 +61,8 @@ impl UserDto {
             &self.id.to_string(),
             &self.email,
             &self.password,
+            self.email_validated,
+            self.account_disabled,
             self.created_at.date(),
             self.updated_at.date(),
         )

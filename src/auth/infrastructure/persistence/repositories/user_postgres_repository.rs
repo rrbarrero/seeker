@@ -26,10 +26,12 @@ impl UserPostgresRepository {
 impl IUserRepository for UserPostgresRepository {
     async fn save(&self, user: &User) -> Result<UserUuid, AuthRepoError> {
         sqlx::query!(
-            "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO users (id, email, password, email_validated, account_disabled, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             user.id.value(),
             user.email.value(),
             user.password().value(),
+            user.email_validated,
+            user.account_disabled,
             user.created
                 .and_hms_opt(0, 0, 0)
                 .expect("Created date should be valid")

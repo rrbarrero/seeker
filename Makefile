@@ -1,5 +1,5 @@
 .PHONY: test format check prepare build run stop down logs front-test front-lint front-type-check front-format front-check
- .PHONY: run-obs database-reset
+.PHONY: run-obs database-reset migrate rust-update
 
 # Rust Targets
 test-rust:
@@ -64,8 +64,13 @@ down:
 logs:
 	docker compose logs -f
 
+migrate:
+	set -a && . ./.env && set +a && \
+	docker compose run --rm -e DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}" test cargo sqlx migrate run
+
 database-reset:
-	cargo sqlx database reset
+	set -a && . ./.env && set +a && \
+	docker compose run --rm -e DATABASE_URL="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}" test cargo sqlx database reset -y
 
 rust-update:
 	docker compose run --rm test /bin/bash -c "cargo update && cd workers/email && cargo update"

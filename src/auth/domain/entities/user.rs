@@ -32,6 +32,8 @@ pub struct User {
     pub id: UserUuid,
     pub email: UserEmail,
     password: UserPassword,
+    pub email_validated: bool,
+    pub account_disabled: bool,
     pub created: NaiveDate,
     pub updated: NaiveDate,
 }
@@ -52,6 +54,8 @@ impl User {
             id,
             email,
             password,
+            email_validated: false,
+            account_disabled: false,
             created,
             updated,
         })
@@ -61,6 +65,8 @@ impl User {
         id: &str,
         email: &str,
         password: &str,
+        email_validated: bool,
+        account_disabled: bool,
         created: NaiveDate,
         updated: NaiveDate,
     ) -> Result<Self, AuthDomainError> {
@@ -71,6 +77,8 @@ impl User {
             id,
             email,
             password,
+            email_validated,
+            account_disabled,
             created,
             updated,
         })
@@ -177,6 +185,8 @@ mod tests {
             email,
             &UserPassword::hash_password(password)
                 .map_err(|e| AuthDomainError::InternalError(e.to_string()))?,
+            false,
+            false,
             created,
             updated,
         )?;
@@ -184,6 +194,8 @@ mod tests {
         assert_eq!(user.id.value().to_string(), id);
         assert_eq!(user.email.value(), email);
         assert_ne!(user.password.value(), password);
+        assert!(!user.email_validated);
+        assert!(!user.account_disabled);
         assert_eq!(user.created, created);
         assert_eq!(user.updated, updated);
 
