@@ -9,3 +9,13 @@ Dockerfile
 docker-compose.yml
 docker/
 README.md
+node_modules
+.next
+out
+build
+coverage
+.DS_Store
+*.log
+*.swp
+*.swo
+.history
