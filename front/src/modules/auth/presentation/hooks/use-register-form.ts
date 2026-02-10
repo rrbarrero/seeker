@@ -23,10 +23,10 @@ export function useRegisterForm() {
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       await authService.register(data);
-      toast.success("Account created successfully", {
-        description: "You can now log in with your credentials.",
+      toast.success("Account created successfully!", {
+        description: "We've sent you a verification email. Please check your inbox.",
       });
-      router.push("/auth/login");
+      router.push("/auth/check-email");
     } catch (error) {
       UiErrorHandler.handle(error, "There was a problem creating your account.");
     }

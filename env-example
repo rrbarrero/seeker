@@ -1,7 +1,32 @@
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+# === Application Environment ===
+# development, production, testing
 ENVIRONMENT=development
+
+# === Database Configuration ===
+# Postgres user for connection
+POSTGRES_USER=postgres
+# Postgres password
+POSTGRES_PASSWORD=postgres
+# Postgres database name (default for docker service)
+POSTGRES_DB=postgres
+# Hostname of the database server
+POSTGRES_HOST=localhost
+# Port of the database server
+POSTGRES_PORT=5432
+# Full connection string for SQLx and application usage
+# Format: postgres://USER:PASSWORD@HOST:PORT/DB_NAME
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/develdb
+# Set to true to disable compile-time SQL checks if DB is not available
+SQLX_OFFLINE=false
+
+# === Security ===
+# Secret key for signing JWT tokens. Change this in production!
+JWT_SECRET=1234abcd1234abcd
+
+# === Network & CORS ===
+# Origins allowed to make requests to the API (e.g. frontend URL)
 CORS_ALLOWED_ORIGIN=http://localhost:3001
+
+# === Frontend Integration ===
+# Public URL of the frontend application (used for email links, etc.)
+FRONTEND_URL=http://localhost:3001

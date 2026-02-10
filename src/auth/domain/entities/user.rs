@@ -93,6 +93,10 @@ impl User {
             )
             .is_ok())
     }
+
+    pub fn validate_email(&mut self) {
+        self.email_validated = true;
+    }
 }
 
 #[cfg(test)]
@@ -201,6 +205,17 @@ mod tests {
 
         assert!(user.verify_password(password)?);
         assert!(!user.verify_password("123")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_email() -> Result<(), AuthDomainError> {
+        let mut user = User::new(&valid_id(), valid_email(), valid_password())?;
+        assert!(!user.email_validated);
+
+        user.validate_email();
+        assert!(user.email_validated);
 
         Ok(())
     }

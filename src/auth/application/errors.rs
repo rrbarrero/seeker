@@ -12,6 +12,9 @@ pub enum AuthError {
     #[error("Registration failed: user already exists")]
     UserAlreadyExists,
 
+    #[error("User not found")]
+    UserNotFound,
+
     #[error("Token expired")]
     TokenExpired,
 
@@ -41,6 +44,7 @@ impl From<AuthError> for axum::http::StatusCode {
             AuthError::InternalError(_) => Self::INTERNAL_SERVER_ERROR,
             AuthError::InvalidCredentials => Self::UNAUTHORIZED,
             AuthError::UserAlreadyExists => Self::BAD_REQUEST,
+            AuthError::UserNotFound => Self::NOT_FOUND,
             AuthError::TokenExpired => Self::UNAUTHORIZED,
             AuthError::InvalidToken => Self::UNAUTHORIZED,
             AuthError::DomainError(_) => Self::BAD_REQUEST,

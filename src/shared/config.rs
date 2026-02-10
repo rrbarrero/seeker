@@ -24,6 +24,7 @@ pub struct Config {
     pub otlp_endpoint: String,
     pub observability_enabled: bool,
     pub service_name: String,
+    pub frontend_url: String,
 }
 
 impl Default for Config {
@@ -38,7 +39,8 @@ impl Default for Config {
         };
 
         let postgres_url = match environment {
-            Environment::Testing => "postgres://postgres:postgres@db:5432/testdb".to_string(),
+            Environment::Testing => env::var("DATABASE_URL")
+                .unwrap_or_else(|_| "postgres://postgres:postgres@db:5432/testdb".to_string()),
             Environment::Production => Self::build_production_database_url(),
         };
 
@@ -69,6 +71,8 @@ impl Default for Config {
                 .as_str()
                 == "true",
             service_name: env::var("SERVICE_NAME").unwrap_or_else(|_| "best-seeker".to_string()),
+            frontend_url: env::var("FRONTEND_URL")
+                .unwrap_or_else(|_| "http://localhost:3001".to_string()),
         }
     }
 }
@@ -93,7 +97,8 @@ impl Config {
     #[cfg(test)]
     pub fn test_default() -> Self {
         Self {
-            postgres_url: "postgres://postgres:postgres@db:5432/testdb".to_string(),
+            postgres_url: env::var("DATABASE_URL")
+                .unwrap_or_else(|_| "postgres://postgres:postgres@db:5432/testdb".to_string()),
             environment: Environment::Testing,
             server_host: "127.0.0.1".to_string(),
             server_port: 3000,
@@ -103,6 +108,7 @@ impl Config {
             otlp_endpoint: "http://localhost:4317".to_string(),
             observability_enabled: false,
             service_name: "best-seeker-test".to_string(),
+            frontend_url: "http://localhost:3001".to_string(),
         }
     }
 }
@@ -115,12 +121,14 @@ mod tests {
     #[test]
     fn test_config_load_testing() {
         temp_env::with_var("ENVIRONMENT", Some("testing"), || {
-            let config = Config::default();
-            assert_eq!(config.environment, Environment::Testing);
+            temp_env::with_var_unset("DATABASE_URL", || {
+                let config = Config::default();
+                assert_eq!(config.environment, Environment::Testing);
 
-            let expected_url = "postgres://postgres:postgres@db:5432/testdb";
+                let expected_url = "postgres://postgres:postgres@db:5432/testdb";
 
-            assert_eq!(config.postgres_url, expected_url);
+                assert_eq!(config.postgres_url, expected_url);
+            });
         });
     }
 

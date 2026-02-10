@@ -20,7 +20,8 @@ async fn main() {
     let config = Arc::new(shared::config::Config::default());
     let pool = composition_root::get_or_create_postgres_pool(&config).await;
     let user_repo = Box::new(composition_root::create_user_postgres_repository(pool.clone()).await);
-    let auth_service = composition_root::create_auth_service(user_repo, config.clone()).await;
+    let auth_service =
+        composition_root::create_auth_service(user_repo, pool.clone(), config.clone()).await;
     let position_repo =
         Box::new(composition_root::create_position_postgres_repository(pool.clone()).await);
     let comment_repo = Box::new(composition_root::create_comment_postgres_repository(pool).await);

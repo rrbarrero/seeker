@@ -55,6 +55,26 @@ impl IUserRepository for UserPostgresRepository {
 
         Ok(user.id)
     }
+    async fn update(&self, user: &User) -> Result<(), AuthRepoError> {
+        let result = sqlx::query!(
+            "UPDATE users SET email_validated = $1, account_disabled = $2, updated_at = $3 WHERE id = $4",
+            user.email_validated,
+            user.account_disabled,
+            user.updated
+                .and_hms_opt(0, 0, 0)
+                .expect("Updated date should be valid")
+                .and_utc(),
+            user.id.value(),
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AuthRepoError::DatabaseError(e.to_string()))?;
+
+        if result.rows_affected() == 0 {
+            return Err(AuthRepoError::NotFound(user.id));
+        }
+        Ok(())
+    }
     async fn get(&self, user_id: UserUuid) -> Result<Option<User>, AuthRepoError> {
         let result = sqlx::query("SELECT * FROM users WHERE id = $1")
             .bind(user_id.value())

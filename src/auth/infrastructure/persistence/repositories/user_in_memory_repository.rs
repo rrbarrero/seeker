@@ -51,6 +51,17 @@ impl IUserRepository for UserInMemoryRepository {
         self.users.write().await.push(user.clone());
         Ok(user_id)
     }
+    async fn update(&self, user: &User) -> Result<(), AuthRepoError> {
+        let mut users = self.users.write().await;
+        let position = users.iter().position(|u| u.id == user.id);
+        match position {
+            Some(idx) => {
+                users[idx] = user.clone();
+                Ok(())
+            }
+            None => Err(AuthRepoError::NotFound(user.id)),
+        }
+    }
     async fn find_by_email(&self, email: UserEmail) -> Result<Option<User>, AuthRepoError> {
         Ok(self
             .users

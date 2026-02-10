@@ -15,7 +15,7 @@ export class InMemoryAuthRepository implements AuthRepository {
     this.users.set(data.email, data.password);
   }
 
-  async login(data: LoginFormValues): Promise<{ access_token: string }> {
+  async login(data: LoginFormValues): Promise<{ access_token: string; email_validated: boolean }> {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -25,7 +25,11 @@ export class InMemoryAuthRepository implements AuthRepository {
       throw new Error("Invalid credentials");
     }
 
-    return { access_token: "fake-jwt-token" };
+    return { access_token: "fake-jwt-token", email_validated: false };
+  }
+
+  async verifyEmail(_token: string): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
   logout(): void {

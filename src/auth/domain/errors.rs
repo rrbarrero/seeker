@@ -10,6 +10,14 @@ pub enum AuthDomainError {
     InternalError(String),
 }
 
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum EmailError {
+    #[error("Failed to send email: {0}")]
+    SendError(String),
+    #[error("Invalid email data: {0}")]
+    InvalidData(String),
+}
+
 impl AuthDomainError {
     pub fn invalid_email(email: String) -> Self {
         Self::Shared(SharedDomainError::InvalidEmail(email))

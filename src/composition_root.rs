@@ -3,6 +3,7 @@ use crate::auth::domain::repositories::user_repository::IUserRepository;
 use crate::auth::infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository;
 use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::auth::infrastructure::services::jwt_token_generator::JwtTokenGenerator;
+use crate::auth::infrastructure::services::postgres_email_queue_enqueuer::PostgresEmailQueueEnqueuer;
 use crate::positions::application::comment_service::CommentService;
 use crate::positions::application::position_service::PositionService;
 use crate::positions::domain::repositories::comment_repository::ICommentRepository;
@@ -49,8 +50,15 @@ pub async fn create_comment_service(repo: Box<dyn ICommentRepository>) -> Commen
 
 pub async fn create_auth_service(
     repo: Box<dyn IUserRepository>,
+    pool: sqlx::postgres::PgPool,
     config: Arc<Config>,
 ) -> AuthService {
-    let token_generator = Box::new(JwtTokenGenerator::new(config));
-    AuthService::new(repo, token_generator)
+    let token_generator = Box::new(JwtTokenGenerator::new(config.clone()));
+    let email_queue = Box::new(PostgresEmailQueueEnqueuer::new(pool));
+    AuthService::new(
+        repo,
+        token_generator,
+        email_queue,
+        config.frontend_url.clone(),
+    )
 }

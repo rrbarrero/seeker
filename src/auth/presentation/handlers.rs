@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::State};
+use axum::{
+    Json,
+    extract::{Query, State},
+};
 
 use crate::auth::{
     application::auth_service::AuthService,
     presentation::{
-        dtos::{LoginDto, SignupDto, SuccesfullLoginDto, UserUuidDto},
+        dtos::{LoginDto, SignupDto, SuccesfullLoginDto, UserUuidDto, VerifyEmailQuery},
         errors::AuthApiError,
     },
 };
@@ -24,8 +27,11 @@ pub async fn login(
     State(service): State<Arc<AuthService>>,
     Json(payload): Json<LoginDto>,
 ) -> Result<Json<SuccesfullLoginDto>, AuthApiError> {
-    let access_token = service.login(&payload.email, &payload.password).await?;
-    Ok(Json(SuccesfullLoginDto { access_token }))
+    let (access_token, email_validated) = service.login(&payload.email, &payload.password).await?;
+    Ok(Json(SuccesfullLoginDto {
+        access_token,
+        email_validated,
+    }))
 }
 
 #[utoipa::path(
@@ -46,4 +52,27 @@ pub async fn signup(
     Ok(Json(UserUuidDto {
         user_uuid: user_uuid.to_string(),
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/verify-email",
+    params(
+        ("token" = String, Query, description = "Email verification token")
+    ),
+    responses(
+        (status = 200, description = "Email verified successfully"),
+        (status = 401, description = "Invalid or expired token"),
+        (status = 404, description = "User not found")
+    ),
+    tag = "Auth"
+)]
+pub async fn verify_email(
+    State(service): State<Arc<AuthService>>,
+    Query(params): Query<VerifyEmailQuery>,
+) -> Result<Json<serde_json::Value>, AuthApiError> {
+    service.verify_email(&params.token).await?;
+    Ok(Json(
+        serde_json::json!({ "message": "Email verified successfully" }),
+    ))
 }

@@ -1,10 +1,14 @@
-use axum::{Router, extract::FromRef, routing::post};
+use axum::{
+    Router,
+    extract::FromRef,
+    routing::{get, post},
+};
 use std::sync::Arc;
 
 use crate::{
     auth::{
         application::auth_service::AuthService,
-        presentation::handlers::{login, signup},
+        presentation::handlers::{login, signup, verify_email},
     },
     shared::config::Config,
 };
@@ -32,6 +36,7 @@ pub fn create_auth_routes(service: Arc<AuthService>, config: Arc<Config>) -> Rou
     Router::new()
         .route("/login", post(login))
         .route("/signup", post(signup))
+        .route("/verify-email", get(verify_email))
         .with_state(state)
 }
 
@@ -51,9 +56,55 @@ mod tests {
     use tower::ServiceExt;
     use uuid::Uuid;
 
+    use crate::auth::application::auth_service::AuthService;
+    use crate::auth::application::email_queue_enqueuer::IEmailQueueEnqueuer;
+    use crate::auth::application::errors::AuthError;
+    use crate::auth::application::token_generator::ITokenGenerator;
     use crate::auth::presentation::dtos::{SignupDto, UserUuidDto};
     use crate::composition_root::create_user_in_memory_repository;
     use crate::shared::fixtures::{valid_email, valid_password};
+    use std::sync::Mutex;
+
+    struct MockTokenGenerator {
+        last_user_id: Mutex<Option<String>>,
+    }
+
+    struct MockEmailQueue;
+    #[async_trait::async_trait]
+    impl IEmailQueueEnqueuer for MockEmailQueue {
+        async fn enqueue(
+            &self,
+            _email: &str,
+            _subject: &str,
+            _body: &str,
+        ) -> Result<(), AuthError> {
+            Ok(())
+        }
+    }
+
+    impl MockTokenGenerator {
+        fn new() -> Self {
+            Self {
+                last_user_id: Mutex::new(None),
+            }
+        }
+    }
+
+    impl ITokenGenerator for MockTokenGenerator {
+        fn generate_token(&self, user_id: &str, _email: &str) -> Result<String, AuthError> {
+            *self.last_user_id.lock().unwrap() = Some(user_id.to_string());
+            Ok("mock-token".to_string())
+        }
+
+        fn validate_token(&self, token: &str) -> Result<String, AuthError> {
+            if token == "mock-token" {
+                let user_id = self.last_user_id.lock().unwrap();
+                Ok(user_id.clone().unwrap_or_default())
+            } else {
+                Err(AuthError::InvalidToken)
+            }
+        }
+    }
 
     async fn setup_router() -> Router {
         let repo = create_user_in_memory_repository().await;
@@ -61,9 +112,14 @@ mod tests {
         repo.save(&user).await.unwrap();
 
         let config = Arc::new(Config::test_default());
-        let service = Arc::new(
-            crate::composition_root::create_auth_service(Box::new(repo), config.clone()).await,
-        );
+        let token_generator = Box::new(MockTokenGenerator::new());
+        let email_queue = Box::new(MockEmailQueue);
+        let service = Arc::new(AuthService::new(
+            Box::new(repo),
+            token_generator,
+            email_queue,
+            "http://localhost:3000".to_string(),
+        ));
         create_auth_routes(service, config)
     }
 
