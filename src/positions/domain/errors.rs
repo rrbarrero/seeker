@@ -1,3 +1,4 @@
+use crate::positions::domain::entities::comment::CommentUuid;
 use crate::positions::domain::entities::position::PositionUuid;
 use crate::shared::domain::errors::SharedDomainError;
 use thiserror::Error;
@@ -34,6 +35,27 @@ impl From<uuid::Error> for PositionDomainError {
 }
 
 #[derive(Error, Debug, PartialEq, Clone)]
+pub enum CommentDomainError {
+    #[error(transparent)]
+    Shared(#[from] SharedDomainError),
+}
+
+impl CommentDomainError {
+    pub fn invalid_uuid() -> Self {
+        match uuid::Uuid::parse_str("invalid") {
+            Ok(_) => unreachable!(),
+            Err(e) => Self::Shared(SharedDomainError::InvalidUuid(e)),
+        }
+    }
+}
+
+impl From<uuid::Error> for CommentDomainError {
+    fn from(e: uuid::Error) -> Self {
+        Self::Shared(SharedDomainError::InvalidUuid(e))
+    }
+}
+
+#[derive(Error, Debug, PartialEq, Clone)]
 pub enum PositionRepoError {
     #[error("Database error: `{0}`")]
     DatabaseError(String),
@@ -43,6 +65,18 @@ pub enum PositionRepoError {
 
     #[error("Position not found: `{0}`")]
     NotFound(PositionUuid),
+}
+
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum CommentRepoError {
+    #[error("Database error: `{0}`")]
+    DatabaseError(String),
+
+    #[error("Error converting from database: `{0}`")]
+    ConversionError(#[from] CommentDomainError),
+
+    #[error("Comment not found: `{0}`")]
+    NotFound(CommentUuid),
 }
 
 #[cfg(test)]
@@ -99,5 +133,31 @@ mod tests {
         let domain_error = PositionDomainError::InvalidStatus("bad".to_string());
         let error = PositionRepoError::from(domain_error);
         assert!(matches!(error, PositionRepoError::ConversionError(_)));
+    }
+
+    #[test]
+    fn test_comment_invalid_uuid_error() {
+        let error = CommentDomainError::invalid_uuid();
+        assert!(matches!(error, CommentDomainError::Shared(_)));
+    }
+
+    #[test]
+    fn test_comment_repo_database_error() {
+        let error = CommentRepoError::DatabaseError("connection failed".to_string());
+        assert_eq!(error.to_string(), "Database error: `connection failed`");
+    }
+
+    #[test]
+    fn test_comment_repo_not_found_error() {
+        let comment_id = CommentUuid::new();
+        let error = CommentRepoError::NotFound(comment_id);
+        assert!(error.to_string().contains("Comment not found"));
+    }
+
+    #[test]
+    fn test_comment_repo_conversion_error() {
+        let domain_error = CommentDomainError::invalid_uuid();
+        let error = CommentRepoError::from(domain_error);
+        assert!(matches!(error, CommentRepoError::ConversionError(_)));
     }
 }

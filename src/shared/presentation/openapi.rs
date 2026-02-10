@@ -5,7 +5,9 @@ use utoipa::{
 
 use crate::auth::presentation::dtos::{LoginDto, SignupDto, SuccesfullLoginDto, UserUuidDto};
 use crate::positions::presentation::dtos::{
-    PositionResponseDto, PositionUuidDto, SavePositionRequestDto, UpdatePositionRequestDto,
+    CommentResponseDto, CommentUuidDto, PositionResponseDto, PositionUuidDto,
+    SaveCommentRequestDto, SavePositionRequestDto, UpdateCommentRequestDto,
+    UpdatePositionRequestDto,
 };
 
 #[derive(OpenApi)]
@@ -18,6 +20,11 @@ use crate::positions::presentation::dtos::{
         crate::positions::presentation::handlers::save_position,
         crate::positions::presentation::handlers::update_position,
         crate::positions::presentation::handlers::remove_position,
+        crate::positions::presentation::comment_handlers::get_comments_for_position,
+        crate::positions::presentation::comment_handlers::get_comment,
+        crate::positions::presentation::comment_handlers::save_comment,
+        crate::positions::presentation::comment_handlers::update_comment,
+        crate::positions::presentation::comment_handlers::remove_comment,
     ),
     components(
         schemas(
@@ -28,13 +35,18 @@ use crate::positions::presentation::dtos::{
             PositionResponseDto,
             PositionUuidDto,
             SavePositionRequestDto,
-            UpdatePositionRequestDto
+            UpdatePositionRequestDto,
+            CommentResponseDto,
+            CommentUuidDto,
+            SaveCommentRequestDto,
+            UpdateCommentRequestDto
         )
     ),
     modifiers(&SecurityAddon),
     tags(
         (name = "Auth", description = "Authentication endpoints"),
-        (name = "Positions", description = "Job positions management")
+        (name = "Positions", description = "Job positions management"),
+        (name = "Comments", description = "Comments for positions")
     )
 )]
 pub struct ApiDoc;

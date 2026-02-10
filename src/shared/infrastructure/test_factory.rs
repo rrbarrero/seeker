@@ -16,6 +16,7 @@ pub struct TestFactory {
 struct FactoryState {
     created_users: Vec<Uuid>,
     created_positions: Vec<Uuid>,
+    created_comments: Vec<Uuid>,
 }
 
 impl TestFactory {
@@ -39,6 +40,7 @@ impl TestFactory {
             state: Arc::new(Mutex::new(FactoryState {
                 created_users: Vec::new(),
                 created_positions: Vec::new(),
+                created_comments: Vec::new(),
             })),
         }
     }
@@ -61,10 +63,21 @@ impl TestFactory {
     }
 
     pub async fn teardown(&self) {
-        let (users, positions) = {
+        let (users, positions, comments) = {
             let state = self.state.lock().unwrap();
-            (state.created_users.clone(), state.created_positions.clone())
+            (
+                state.created_users.clone(),
+                state.created_positions.clone(),
+                state.created_comments.clone(),
+            )
         };
+
+        // Delete comments first to avoid FK violations
+        for id in &comments {
+            let _ = sqlx::query!("DELETE FROM comments WHERE id = $1", id)
+                .execute(&self.pool)
+                .await;
+        }
 
         // Delete all positions for our created users first to avoid FK violations
         for user_id in &users {
@@ -90,20 +103,28 @@ impl TestFactory {
         let mut state = self.state.lock().unwrap();
         state.created_users.clear();
         state.created_positions.clear();
+        state.created_comments.clear();
     }
     pub fn track_position(&mut self, id: Uuid) {
         self.state.lock().unwrap().created_positions.push(id);
+    }
+    pub fn track_comment(&mut self, id: Uuid) {
+        self.state.lock().unwrap().created_comments.push(id);
     }
 }
 
 impl Drop for TestFactory {
     fn drop(&mut self) {
         let state = self.state.lock().unwrap();
-        if !state.created_users.is_empty() || !state.created_positions.is_empty() {
+        if !state.created_users.is_empty()
+            || !state.created_positions.is_empty()
+            || !state.created_comments.is_empty()
+        {
             // Drop can't be async, so we spawn a thread to handle the cleanup
             // We use a new runtime to block on the async cleanup
             let users = state.created_users.clone();
             let positions = state.created_positions.clone();
+            let comments = state.created_comments.clone();
 
             std::thread::spawn(move || {
                 let rt = tokio::runtime::Builder::new_current_thread()
@@ -115,6 +136,11 @@ impl Drop for TestFactory {
                     // Create a fresh pool for cleanup to avoid Runtime/shutdown issues with the test pool
                     let config = Config::default();
                     if let Ok(cleanup_pool) = sqlx::PgPool::connect(&config.postgres_url).await {
+                        for id in &comments {
+                            let _ = sqlx::query!("DELETE FROM comments WHERE id = $1", id)
+                                .execute(&cleanup_pool)
+                                .await;
+                        }
                         for user_id in &users {
                             let _ =
                                 sqlx::query!("DELETE FROM positions WHERE user_id = $1", user_id)

@@ -21,8 +21,11 @@ async fn main() {
     let pool = composition_root::get_or_create_postgres_pool(&config).await;
     let user_repo = Box::new(composition_root::create_user_postgres_repository(pool.clone()).await);
     let auth_service = composition_root::create_auth_service(user_repo, config.clone()).await;
-    let position_repo = Box::new(composition_root::create_position_postgres_repository(pool).await);
+    let position_repo =
+        Box::new(composition_root::create_position_postgres_repository(pool.clone()).await);
+    let comment_repo = Box::new(composition_root::create_comment_postgres_repository(pool).await);
     let position_service = composition_root::create_position_service(position_repo).await;
+    let comment_service = composition_root::create_comment_service(comment_repo).await;
     let observability = if config.observability_enabled {
         match shared::infrastructure::observability::init_observability(
             &config.service_name,
@@ -47,6 +50,7 @@ async fn main() {
             "/positions",
             positions::presentation::routes::create_position_routes(
                 Arc::new(position_service),
+                Arc::new(comment_service),
                 config.clone(),
             ),
         )

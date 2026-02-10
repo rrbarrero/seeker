@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+use crate::positions::domain::entities::comment::{Comment, CommentBuilder};
 use crate::positions::domain::entities::position::{Position, PositionBuilder, PositionStatus};
 
 pub static TESTING_DATE: &str = "Fri, 23 Jan 2026 10:10:10 +0200";
@@ -17,6 +18,18 @@ pub fn create_fixture_position() -> Position {
         .expect("Should create position with applied on")
         .with_url("https://me-the.url")
         .with_status(PositionStatus::PhoneScreenScheduled)
+        .build()
+}
+
+pub fn create_fixture_comment() -> Comment {
+    CommentBuilder::default()
+        .with_uuid(&Uuid::new_v4().to_string())
+        .expect("Should create comment with uuid")
+        .with_position_uuid(&Uuid::new_v4().to_string())
+        .expect("Should create comment with position uuid")
+        .with_user_uuid(&Uuid::new_v4().to_string())
+        .expect("Should create comment with user uuid")
+        .with_body("Im a comment body")
         .build()
 }
 

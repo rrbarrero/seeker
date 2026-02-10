@@ -1,5 +1,5 @@
 .PHONY: test format check prepare build run stop down logs front-test front-lint front-type-check front-format front-check
- .PHONY: run-obs
+ .PHONY: run-obs database-reset
 
 # Rust Targets
 test-rust:
@@ -63,3 +63,6 @@ down:
 
 logs:
 	docker compose logs -f
+
+database-reset:
+	cargo sqlx database reset

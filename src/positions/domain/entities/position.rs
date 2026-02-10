@@ -27,6 +27,10 @@ impl PositionUuid {
     pub fn new() -> Self {
         PositionUuid { id: Uuid::new_v4() }
     }
+
+    pub fn from_uuid(id: Uuid) -> Self {
+        PositionUuid { id }
+    }
 }
 
 impl FromStr for PositionUuid {

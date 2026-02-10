@@ -6,9 +6,10 @@ use axum::{
     routing::{delete, get, post, put},
 };
 
+use crate::positions::presentation::comment_routes::create_comment_routes;
 use crate::{
     positions::{
-        application::position_service::PositionService,
+        application::{comment_service::CommentService, position_service::PositionService},
         presentation::handlers::{
             get_position, get_positions, remove_position, save_position, update_position,
         },
@@ -19,6 +20,7 @@ use crate::{
 #[derive(Clone)]
 pub struct PositionState {
     pub service: Arc<PositionService>,
+    pub comment_service: Arc<CommentService>,
     pub config: Arc<Config>,
 }
 
@@ -28,20 +30,35 @@ impl FromRef<PositionState> for Arc<PositionService> {
     }
 }
 
+impl FromRef<PositionState> for Arc<CommentService> {
+    fn from_ref(state: &PositionState) -> Self {
+        state.comment_service.clone()
+    }
+}
+
 impl FromRef<PositionState> for Arc<Config> {
     fn from_ref(state: &PositionState) -> Self {
         state.config.clone()
     }
 }
 
-pub fn create_position_routes(service: Arc<PositionService>, config: Arc<Config>) -> Router {
-    let state = PositionState { service, config };
+pub fn create_position_routes(
+    service: Arc<PositionService>,
+    comment_service: Arc<CommentService>,
+    config: Arc<Config>,
+) -> Router {
+    let state = PositionState {
+        service,
+        comment_service,
+        config,
+    };
     Router::new()
         .route("/", get(get_positions))
         .route("/{id}", get(get_position))
         .route("/", post(save_position))
         .route("/{id}", put(update_position))
         .route("/{id}", delete(remove_position))
+        .nest("/{position_id}/comments", create_comment_routes())
         .with_state(state)
 }
 
@@ -64,8 +81,14 @@ mod tests {
     fn setup_router() -> (Router, Arc<Config>) {
         let repo = PositionInMemoryRepository::default();
         let service = Arc::new(PositionService::new(Box::new(repo)));
+        let comment_service = Arc::new(CommentService::new(Box::new(
+            crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
+        )));
         let config = Arc::new(Config::test_default());
-        (create_position_routes(service, config.clone()), config)
+        (
+            create_position_routes(service, comment_service, config.clone()),
+            config,
+        )
     }
 
     fn get_auth_header(config: &Config) -> String {
@@ -145,8 +168,11 @@ mod tests {
 
         let _ = repo.save(position.clone()).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
+        let comment_service = Arc::new(CommentService::new(Box::new(
+            crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
+        )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, config.clone());
+        let app = create_position_routes(service, comment_service, config.clone());
 
         let uri = format!("/{}", id);
         let response = app
@@ -171,8 +197,11 @@ mod tests {
 
         let _ = repo.save(position).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
+        let comment_service = Arc::new(CommentService::new(Box::new(
+            crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
+        )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, config.clone());
+        let app = create_position_routes(service, comment_service, config.clone());
 
         let uri = format!("/{}", id);
         let response = app
@@ -198,8 +227,11 @@ mod tests {
 
         let _ = repo.save(position).await;
         let service = Arc::new(PositionService::new(Box::new(repo)));
+        let comment_service = Arc::new(CommentService::new(Box::new(
+            crate::positions::infrastructure::persistence::repositories::comment_in_memory_repository::CommentInMemoryRepository::default(),
+        )));
         let config = Arc::new(Config::test_default());
-        let app = create_position_routes(service, config.clone());
+        let app = create_position_routes(service, comment_service, config.clone());
 
         let body_json = r#"
         {

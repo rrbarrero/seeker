@@ -1,15 +1,17 @@
 use std::str::FromStr;
 
 use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::{
     positions::{
+        domain::entities::comment::{Comment, CommentBody, CommentUuid},
         domain::entities::position::{
             AppliedOn, Company, Description, Position, PositionStatus, PositionUuid, RoleTitle, Url,
         },
-        presentation::errors::PositionApiError,
+        presentation::errors::{CommentApiError, PositionApiError},
     },
-    shared::domain::value_objects::UserUuid,
+    shared::domain::{errors::SharedDomainError, value_objects::UserUuid},
 };
 use utoipa::ToSchema;
 
@@ -63,6 +65,57 @@ impl TryFrom<PositionUuidDto> for PositionUuid {
 
 impl From<PositionUuid> for PositionUuidDto {
     fn from(val: PositionUuid) -> Self {
+        Self {
+            id: val.to_string(),
+        }
+    }
+}
+
+impl PositionUuidDto {
+    pub fn to_position_uuid(&self) -> Result<PositionUuid, SharedDomainError> {
+        let id = Uuid::parse_str(&self.id)?;
+        Ok(PositionUuid::from_uuid(id))
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct CommentResponseDto {
+    pub id: String,
+    pub position_id: String,
+    pub user_id: String,
+    pub body: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl From<&Comment> for CommentResponseDto {
+    fn from(comment: &Comment) -> Self {
+        Self {
+            id: comment.id.to_string(),
+            position_id: comment.position_id.to_string(),
+            user_id: comment.user_id.to_string(),
+            body: comment.body.to_string(),
+            created_at: comment.created_at.to_string(),
+            updated_at: comment.updated_at.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
+pub struct CommentUuidDto {
+    id: String,
+}
+
+impl TryFrom<CommentUuidDto> for CommentUuid {
+    type Error = CommentApiError;
+
+    fn try_from(val: CommentUuidDto) -> Result<Self, Self::Error> {
+        Ok(CommentUuid::from_str(&val.id)?)
+    }
+}
+
+impl From<CommentUuid> for CommentUuidDto {
+    fn from(val: CommentUuid) -> Self {
         Self {
             id: val.to_string(),
         }
@@ -126,5 +179,47 @@ impl UpdatePositionRequestDto {
             deleted: existing.deleted,
         };
         Ok(position)
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct SaveCommentRequestDto {
+    pub body: String,
+}
+
+impl SaveCommentRequestDto {
+    pub fn to_new_comment(
+        &self,
+        user_id: UserUuid,
+        position_id: PositionUuid,
+    ) -> Result<Comment, CommentApiError> {
+        let comment = Comment {
+            id: CommentUuid::new(),
+            position_id,
+            user_id,
+            body: CommentBody::new(&self.body),
+            created_at: chrono::Local::now(),
+            updated_at: chrono::Local::now(),
+        };
+        Ok(comment)
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateCommentRequestDto {
+    pub body: String,
+}
+
+impl UpdateCommentRequestDto {
+    pub fn to_updated_comment(&self, existing: Comment) -> Result<Comment, CommentApiError> {
+        let comment = Comment {
+            id: existing.id,
+            position_id: existing.position_id,
+            user_id: existing.user_id,
+            body: CommentBody::new(&self.body),
+            created_at: existing.created_at,
+            updated_at: chrono::Local::now(),
+        };
+        Ok(comment)
     }
 }

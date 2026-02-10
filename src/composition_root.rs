@@ -3,8 +3,11 @@ use crate::auth::domain::repositories::user_repository::IUserRepository;
 use crate::auth::infrastructure::persistence::repositories::user_in_memory_repository::UserInMemoryRepository;
 use crate::auth::infrastructure::persistence::repositories::user_postgres_repository::UserPostgresRepository;
 use crate::auth::infrastructure::services::jwt_token_generator::JwtTokenGenerator;
+use crate::positions::application::comment_service::CommentService;
 use crate::positions::application::position_service::PositionService;
+use crate::positions::domain::repositories::comment_repository::ICommentRepository;
 use crate::positions::domain::repositories::position_repository::IPositionRepository;
+use crate::positions::infrastructure::persistence::repositories::comment_postgres_repository::CommentPostgresRepository;
 use crate::positions::infrastructure::persistence::repositories::position_postgres_repository::PositionPostgresRepository;
 use crate::shared::config::Config;
 use crate::shared::infrastructure::postgres_conn::get_or_create_pool;
@@ -20,6 +23,12 @@ pub async fn create_position_postgres_repository(
     PositionPostgresRepository::new(pool).await
 }
 
+pub async fn create_comment_postgres_repository(
+    pool: sqlx::postgres::PgPool,
+) -> CommentPostgresRepository {
+    CommentPostgresRepository::new(pool).await
+}
+
 pub async fn create_user_in_memory_repository() -> UserInMemoryRepository {
     UserInMemoryRepository::default()
 }
@@ -32,6 +41,10 @@ pub async fn create_user_postgres_repository(
 
 pub async fn create_position_service(repo: Box<dyn IPositionRepository>) -> PositionService {
     PositionService::new(repo)
+}
+
+pub async fn create_comment_service(repo: Box<dyn ICommentRepository>) -> CommentService {
+    CommentService::new(repo)
 }
 
 pub async fn create_auth_service(
