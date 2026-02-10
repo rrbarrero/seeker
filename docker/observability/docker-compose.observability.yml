@@ -3,7 +3,7 @@ services:
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OBS_ENABLED: "true"
-      RUST_LOG: info
+      RUST_LOG: warn
     depends_on:
       - alloy
   grafana:
@@ -27,7 +27,7 @@ services:
   alloy:
     image: grafana/alloy:latest
     container_name: best-seeker-alloy
-    command: [ "run", "/etc/alloy/config.alloy" ]
+    command: ["run", "/etc/alloy/config.alloy"]
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
@@ -42,7 +42,11 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: best-seeker-prometheus
-    command: [ "--config.file=/etc/prometheus/prometheus.yml", "--web.enable-remote-write-receiver" ]
+    command:
+      [
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--web.enable-remote-write-receiver",
+      ]
     ports:
       - "9090:9090"
     volumes:
@@ -52,7 +56,7 @@ services:
   loki:
     image: grafana/loki:3.3.2
     container_name: best-seeker-loki
-    command: [ "-config.file=/etc/loki/config.yaml" ]
+    command: ["-config.file=/etc/loki/config.yaml"]
     ports:
       - "3100:3100"
     volumes:
@@ -62,7 +66,7 @@ services:
   tempo:
     image: grafana/tempo:2.7.0
     container_name: best-seeker-tempo
-    command: [ "-config.file=/etc/tempo/config.yaml" ]
+    command: ["-config.file=/etc/tempo/config.yaml"]
     ports:
       - "3200:3200"
     volumes:
