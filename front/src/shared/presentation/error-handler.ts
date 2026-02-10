@@ -1,5 +1,11 @@
 import { toast } from "sonner";
-import { BaseError, DomainError, InfrastructureError, UnauthorizedError } from "../domain/errors";
+import {
+  BaseError,
+  DomainError,
+  ForbiddenError,
+  InfrastructureError,
+  UnauthorizedError,
+} from "../domain/errors";
 
 export class UiErrorHandler {
   public static handle(error: unknown, fallbackMessage = "An unexpected error occurred"): void {
@@ -15,6 +21,13 @@ export class UiErrorHandler {
 
     if (error instanceof DomainError) {
       toast.error("Validation Error", {
+        description: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof ForbiddenError) {
+      toast.error("Permission Denied", {
         description: error.message,
       });
       return;

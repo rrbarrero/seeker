@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Calendar, Building2, Briefcase, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,21 +18,52 @@ import {
 import { Position, type PositionProps } from "../../domain/position";
 import { useDeletePosition } from "../hooks/use-delete-position";
 import { UpdatePositionForm } from "./update-position-form";
+import type { CommentProps } from "../../domain/comment";
+import { CommentList } from "./comment-list";
+import { CommentForm } from "./comment-form";
+import { tokenRepository } from "@/modules/auth/composition-root";
+import { getUserIdFromToken } from "@/shared/jwt";
 
 interface PositionDetailProps {
   position: PositionProps;
+  comments: CommentProps[];
 }
 
-export function PositionDetail({ position: props }: PositionDetailProps) {
+export function PositionDetail({
+  position: props,
+  comments: initialComments,
+}: PositionDetailProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [comments, setComments] = useState<CommentProps[]>(initialComments);
   const router = useRouter();
   const { deletePosition, isDeleting } = useDeletePosition();
+
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
   const position = Position.fromPrimitives(props);
+  const currentUserId = useMemo(() => getUserIdFromToken(tokenRepository.get()), []);
+  const isOwner = currentUserId === position.userId;
 
   const handleDelete = async () => {
     await deletePosition(position.id);
     setShowDeleteDialog(false);
+  };
+
+  const handleCommentCreated = (comment: CommentProps) => {
+    setComments((prev) => [comment, ...prev]);
+    router.refresh();
+  };
+
+  const handleCommentUpdated = (comment: CommentProps) => {
+    setComments((prev) => prev.map((item) => (item.id === comment.id ? comment : item)));
+    router.refresh();
+  };
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments((prev) => prev.filter((item) => item.id !== commentId));
+    router.refresh();
   };
 
   const handleUpdated = () => {
@@ -192,6 +223,31 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Card className="border-none shadow-sm dark:bg-zinc-900">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold">Interview Notes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isOwner ? (
+            <CommentForm positionId={position.id} onCreated={handleCommentCreated} />
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Only the position owner can add comments.
+            </p>
+          )}
+
+          <div className="border-t pt-4 dark:border-zinc-800">
+            <CommentList
+              comments={comments}
+              positionId={position.id}
+              currentUserId={currentUserId}
+              onUpdated={handleCommentUpdated}
+              onDeleted={handleCommentDeleted}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

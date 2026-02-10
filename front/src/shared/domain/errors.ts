@@ -42,3 +42,9 @@ export class NotFoundError extends InfrastructureError {
     super(message, "NOT_FOUND", 404);
   }
 }
+
+export class ForbiddenError extends InfrastructureError {
+  constructor(message = "Forbidden") {
+    super(message, "FORBIDDEN", 403);
+  }
+}
