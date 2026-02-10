@@ -153,9 +153,9 @@ impl AuthService {
 
         let verification_link = format!("{}/auth/verify-email?token={}", self.frontend_url, token);
 
-        let subject = "Verifica tu email";
+        let subject = "Verify your email";
         let body = format!(
-            "Hola,\n\nPor favor verifica tu email haciendo clic en el siguiente enlace:\n\n{}\n\nEste enlace expirará en unas horas.\n\nSi no te has registrado, ignora este mensaje.",
+            "Hello,\n\nPlease verify your email by clicking the link below:\n\n{}\n\nThis link will expire in a few hours.\n\nIf you did not register, please ignore this message.",
             verification_link
         );
 
