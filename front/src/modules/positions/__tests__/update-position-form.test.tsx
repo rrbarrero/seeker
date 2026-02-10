@@ -29,7 +29,6 @@ describe("UpdatePositionForm", () => {
       description: "Desc",
       appliedOn: "2024-01-01T00:00:00Z",
       url: "https://example.com",
-      initialComment: "Note",
       status: "CvSent",
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
@@ -59,9 +58,6 @@ describe("UpdatePositionForm", () => {
     fireEvent.change(screen.getByLabelText("Description"), {
       target: { value: "Updated description" },
     });
-    fireEvent.change(screen.getByLabelText("Initial Comment"), {
-      target: { value: "Updated comment" },
-    });
 
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
@@ -75,7 +71,6 @@ describe("UpdatePositionForm", () => {
       description: "Updated description",
       appliedOn: new Date("2024-02-01").toUTCString(),
       url: "https://updated.example",
-      initialComment: "Updated comment",
       status: "PhoneScreenScheduled",
     });
 

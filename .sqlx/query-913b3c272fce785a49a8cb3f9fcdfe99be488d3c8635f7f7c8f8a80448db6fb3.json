@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+  "query": "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,7 +12,6 @@
         "Text",
         "Date",
         "Varchar",
-        "Text",
         "Varchar",
         "Timestamp",
         "Timestamp",
@@ -22,5 +21,5 @@
     },
     "nullable": []
   },
-  "hash": "5579bd1a1b606bd428f480b3c11a845e98f104dc3fd094a5b638c65c70bd9148"
+  "hash": "913b3c272fce785a49a8cb3f9fcdfe99be488d3c8635f7f7c8f8a80448db6fb3"
 }

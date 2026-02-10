@@ -33,7 +33,6 @@ export function useUpdatePositionForm({ position, onSuccess }: UseUpdatePosition
       description: position.description,
       appliedOn: toDateInputValue(position.appliedOn),
       url: position.url,
-      initialComment: position.initialComment,
       status: position.status,
     },
   });
@@ -48,7 +47,6 @@ export function useUpdatePositionForm({ position, onSuccess }: UseUpdatePosition
         description: values.description,
         appliedOn: rfcDate,
         url: values.url,
-        initialComment: values.initialComment,
         status: values.status as PositionStatus,
       });
 

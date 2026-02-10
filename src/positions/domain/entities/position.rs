@@ -180,29 +180,6 @@ impl std::fmt::Display for Url {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct InitialComment {
-    initial_comment: String,
-}
-
-impl InitialComment {
-    pub fn value(&self) -> &str {
-        &self.initial_comment
-    }
-
-    pub fn new(comment: &str) -> Self {
-        InitialComment {
-            initial_comment: comment.to_string(),
-        }
-    }
-}
-
-impl std::fmt::Display for InitialComment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.initial_comment)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum PositionStatus {
     CvSent,
     PhoneScreenScheduled,
@@ -251,7 +228,6 @@ pub struct Position {
     pub description: Description,
     pub applied_on: AppliedOn,
     pub url: Url,
-    pub initial_comment: InitialComment,
     pub status: PositionStatus,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
@@ -273,7 +249,6 @@ pub struct PositionBuilder {
     description: Description,
     applied_on: AppliedOn,
     url: Url,
-    initial_comment: InitialComment,
     status: PositionStatus,
     created_at: DateTime<Local>,
     updated_at: DateTime<Local>,
@@ -326,11 +301,6 @@ impl PositionBuilder {
         self
     }
 
-    pub fn with_initial_comment(mut self, initial_comment: &str) -> Self {
-        self.initial_comment = InitialComment::new(initial_comment);
-        self
-    }
-
     pub fn with_status(mut self, status: PositionStatus) -> Self {
         self.status = status;
         self
@@ -370,7 +340,6 @@ impl PositionBuilder {
             description: self.description,
             applied_on: self.applied_on,
             url: self.url,
-            initial_comment: self.initial_comment,
             status: self.status,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -390,7 +359,6 @@ impl Default for PositionBuilder {
             description: Description::new(""),
             applied_on: AppliedOn::default(),
             url: Url::new(""),
-            initial_comment: InitialComment::new(""),
             status: PositionStatus::CvSent,
             created_at: Local::now(),
             updated_at: Local::now(),
@@ -444,10 +412,6 @@ mod tests {
         );
         assert_eq!(position.applied_on.value(), "2026-01-23");
         assert_eq!(position.url.value(), "https://me-the.url");
-        assert_eq!(
-            position.initial_comment.value(),
-            "... and I the initial comment"
-        );
         assert_eq!(position.status, PositionStatus::PhoneScreenScheduled);
     }
 }

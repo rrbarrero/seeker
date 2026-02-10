@@ -21,7 +21,6 @@ export interface PositionProps {
   description: string;
   appliedOn: string;
   url: string;
-  initialComment: string;
   status: PositionStatus;
   createdAt: string;
   updatedAt: string;
@@ -68,9 +67,6 @@ export class Position {
   }
   get url(): string {
     return this._url.value;
-  }
-  get initialComment(): string {
-    return this.props.initialComment;
   }
   get status(): PositionStatus {
     return this.props.status;
@@ -154,7 +150,6 @@ export class Position {
       this._applied_on = new AppliedDate(props.appliedOn); // Re-validate
       this.props.appliedOn = props.appliedOn;
     }
-    if (props.initialComment !== undefined) this.props.initialComment = props.initialComment;
 
     this.validate();
     this.touch();

@@ -16,7 +16,6 @@ pub fn create_fixture_position() -> Position {
         .with_applied_on(TESTING_DATE)
         .expect("Should create position with applied on")
         .with_url("https://me-the.url")
-        .with_initial_comment("... and I the initial comment")
         .with_status(PositionStatus::PhoneScreenScheduled)
         .build()
 }

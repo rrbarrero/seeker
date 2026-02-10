@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE positions SET company = $1, role_title = $2, description = $3, applied_on = $4, url = $5, initial_comment = $6, status = $7, updated_at = $8 WHERE id = $9",
+  "query": "UPDATE positions SET company = $1, role_title = $2, description = $3, applied_on = $4, url = $5, status = $6, updated_at = $7 WHERE id = $8",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,7 +10,6 @@
         "Text",
         "Date",
         "Varchar",
-        "Text",
         "Varchar",
         "Timestamp",
         "Uuid"
@@ -18,5 +17,5 @@
     },
     "nullable": []
   },
-  "hash": "3108ae1d6e922991cfd659994e7b3b3082269a44e15142645a549db3e7ec5d6d"
+  "hash": "08d73ec66280bb78380d69124384ece7ef0561a1df3bfe8ced74f42eaa0da17d"
 }

@@ -8,7 +8,6 @@ const validPayload = {
   description: "Nice role",
   appliedOn: "2024-02-01",
   url: "https://example.com",
-  initialComment: "",
   status: "CvSent",
 };
 

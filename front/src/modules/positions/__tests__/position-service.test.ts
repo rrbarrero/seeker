@@ -19,7 +19,6 @@ describe("PositionService", () => {
         description: "A great opportunity",
         appliedOn: "2024-01-15T00:00:00Z",
         url: "https://acme.com/jobs/1",
-        initialComment: "Excited about this role",
         status: "CvSent",
         createdAt: "2024-01-15T10:00:00Z",
         updatedAt: "2024-01-15T10:00:00Z",
@@ -34,7 +33,6 @@ describe("PositionService", () => {
         description: "React position",
         appliedOn: "2024-01-20T00:00:00Z",
         url: "https://tech.com/jobs/2",
-        initialComment: "Good culture fit",
         status: "TechnicalInterview",
         createdAt: "2024-01-20T10:00:00Z",
         updatedAt: "2024-01-20T10:00:00Z",
@@ -49,7 +47,6 @@ describe("PositionService", () => {
       description: "Entry level position",
       appliedOn: "2024-02-01T00:00:00Z",
       url: "https://newcompany.com/jobs/1",
-      initialComment: "First job application",
       status: "CvSent",
     };
 

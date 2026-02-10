@@ -11,7 +11,6 @@ describe("Position Entity", () => {
     description: "Cool job",
     appliedOn: "2024-01-15",
     url: "https://acme.at/jobs",
-    initialComment: "Applied",
     status: "CvSent",
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",

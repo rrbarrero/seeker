@@ -5,8 +5,7 @@ use serde::Deserialize;
 use crate::{
     positions::{
         domain::entities::position::{
-            AppliedOn, Company, Description, InitialComment, Position, PositionStatus,
-            PositionUuid, RoleTitle, Url,
+            AppliedOn, Company, Description, Position, PositionStatus, PositionUuid, RoleTitle, Url,
         },
         presentation::errors::PositionApiError,
     },
@@ -23,7 +22,6 @@ pub struct PositionResponseDto {
     pub description: String,
     pub applied_on: String,
     pub url: String,
-    pub initial_comment: String,
     pub status: String,
     pub created_at: String,
     pub updated_at: String,
@@ -41,7 +39,6 @@ impl From<&Position> for PositionResponseDto {
             description: position.description.to_string(),
             applied_on: position.applied_on.to_string(),
             url: position.url.to_string(),
-            initial_comment: position.initial_comment.to_string(),
             status: position.status.to_string(),
             created_at: position.created_at.to_string(),
             updated_at: position.updated_at.to_string(),
@@ -79,7 +76,6 @@ pub struct SavePositionRequestDto {
     pub description: String,
     pub applied_on: String,
     pub url: String,
-    pub initial_comment: String,
     pub status: String,
 }
 
@@ -93,7 +89,6 @@ impl SavePositionRequestDto {
             description: Description::new(&self.description),
             applied_on: AppliedOn::new(&self.applied_on)?,
             url: Url::new(&self.url),
-            initial_comment: InitialComment::new(&self.initial_comment),
             status: PositionStatus::from_str(&self.status)?,
             created_at: chrono::Local::now(),
             updated_at: chrono::Local::now(),
@@ -111,7 +106,6 @@ pub struct UpdatePositionRequestDto {
     pub description: String,
     pub applied_on: String,
     pub url: String,
-    pub initial_comment: String,
     pub status: String,
 }
 
@@ -125,7 +119,6 @@ impl UpdatePositionRequestDto {
             description: Description::new(&self.description),
             applied_on: AppliedOn::new(&self.applied_on)?,
             url: Url::new(&self.url),
-            initial_comment: InitialComment::new(&self.initial_comment),
             status: PositionStatus::from_str(&self.status)?,
             created_at: existing.created_at,
             updated_at: chrono::Local::now(),

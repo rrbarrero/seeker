@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ExternalLink,
-  Calendar,
-  Building2,
-  Briefcase,
-  MessageSquare,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, Calendar, Building2, Briefcase, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -94,18 +86,6 @@ export function PositionDetail({ position: props }: PositionDetailProps) {
                   </p>
                 </div>
               </div>
-
-              {position.initialComment && (
-                <div className="space-y-2">
-                  <h3 className="flex items-center gap-2 text-lg font-semibold">
-                    <MessageSquare className="text-primary h-5 w-5" />
-                    Initial Comments
-                  </h3>
-                  <div className="bg-primary/5 border-primary/10 rounded-lg border p-4 text-zinc-600 italic dark:text-zinc-400">
-                    &ldquo;{position.initialComment}&rdquo;
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>

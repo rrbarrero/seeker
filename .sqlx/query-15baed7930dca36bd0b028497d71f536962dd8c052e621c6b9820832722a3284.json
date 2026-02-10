@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM positions WHERE id = $1",
+  "query": "SELECT id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted FROM positions WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -40,31 +40,26 @@
       },
       {
         "ordinal": 7,
-        "name": "initial_comment",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 8,
         "name": "status",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamp"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "updated_at",
         "type_info": "Timestamp"
       },
       {
-        "ordinal": 11,
+        "ordinal": 10,
         "name": "deleted_at",
         "type_info": "Timestamp"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "deleted",
         "type_info": "Bool"
       }
@@ -85,10 +80,9 @@
       false,
       false,
       false,
-      false,
       true,
       false
     ]
   },
-  "hash": "591abeb6b8654efb70b15202655b9e20331ca4831d829e7f6fa784a62347fa7c"
+  "hash": "15baed7930dca36bd0b028497d71f536962dd8c052e621c6b9820832722a3284"
 }

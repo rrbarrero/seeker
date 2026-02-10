@@ -22,7 +22,6 @@ export class InMemoryPositionRepository implements PositionRepository {
           description: "Writing safe code.",
           appliedOn: "2023-10-27",
           url: "https://rust-corp.com/jobs/1",
-          initialComment: "Looks promising",
           status: "CvSent",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -37,7 +36,6 @@ export class InMemoryPositionRepository implements PositionRepository {
           description: "Building the web.",
           appliedOn: "2023-11-01",
           url: "https://nextjs.org/jobs/2",
-          initialComment: "Referral from a friend",
           status: "TechnicalInterview",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -97,7 +95,6 @@ export class InMemoryPositionRepository implements PositionRepository {
       description: input.description,
       appliedOn: input.appliedOn,
       url: input.url,
-      initialComment: input.initialComment,
       status: input.status,
       updatedAt: new Date().toISOString(),
     });

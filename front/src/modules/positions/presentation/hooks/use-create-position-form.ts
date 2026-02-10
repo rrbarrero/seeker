@@ -24,7 +24,6 @@ const formSchema = z.object({
     },
     { message: "Must be a valid URL" },
   ),
-  initialComment: z.string(),
   status: z.enum(POSITION_STATUSES),
 });
 
@@ -45,7 +44,6 @@ export function useCreatePositionForm({ onSuccess }: UseCreatePositionFormProps)
       description: "",
       appliedOn: new Date().toISOString().split("T")[0],
       url: "",
-      initialComment: "",
       status: "CvSent",
     },
   });
@@ -57,7 +55,6 @@ export function useCreatePositionForm({ onSuccess }: UseCreatePositionFormProps)
       await positionService.createPosition({
         ...values,
         description: values.description,
-        initialComment: values.initialComment,
         url: values.url,
         appliedOn: rfcDate,
         status: values.status as PositionStatus,

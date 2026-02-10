@@ -20,7 +20,6 @@ struct PositionRow {
     description: String,
     applied_on: NaiveDate,
     url: String,
-    initial_comment: String,
     status: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
@@ -46,7 +45,6 @@ impl PositionPostgresRepository {
             .with_description(&row.description)
             .with_applied_on_date(row.applied_on)
             .with_url(&row.url)
-            .with_initial_comment(&row.initial_comment)
             .with_status(PositionStatus::from_str(&row.status)?)
             .with_created_at(DateTime::<Local>::from(
                 Utc.from_utc_datetime(&row.created_at),
@@ -69,7 +67,7 @@ impl IPositionRepository for PositionPostgresRepository {
         let position_id = position.id;
         let user_id = position.user_id;
         sqlx::query!(
-            "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, initial_comment, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+            "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             position.id.value(),
             position.user_id.value(),
             position.company.value(),
@@ -77,7 +75,6 @@ impl IPositionRepository for PositionPostgresRepository {
             position.description.value(),
             position.applied_on.date(),
             position.url.value(),
-            position.initial_comment.value(),
             format!("{:?}", position.status),
             position.created_at.naive_utc(),
             position.updated_at.naive_utc(),
@@ -102,13 +99,12 @@ impl IPositionRepository for PositionPostgresRepository {
 
     async fn update(&self, position: Position) -> Result<(), PositionRepoError> {
         let result = sqlx::query!(
-            "UPDATE positions SET company = $1, role_title = $2, description = $3, applied_on = $4, url = $5, initial_comment = $6, status = $7, updated_at = $8 WHERE id = $9",
+            "UPDATE positions SET company = $1, role_title = $2, description = $3, applied_on = $4, url = $5, status = $6, updated_at = $7 WHERE id = $8",
             position.company.value(),
             position.role_title.value(),
             position.description.value(),
             position.applied_on.date(),
             position.url.value(),
-            position.initial_comment.value(),
             format!("{:?}", position.status),
             position.updated_at.naive_utc(),
             position.id.value(),
@@ -145,7 +141,7 @@ impl IPositionRepository for PositionPostgresRepository {
     async fn get(&self, _position_id: PositionUuid) -> Result<Option<Position>, PositionRepoError> {
         let result = sqlx::query_as!(
             PositionRow,
-            "SELECT * FROM positions WHERE id = $1",
+            "SELECT id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted FROM positions WHERE id = $1",
             _position_id.value()
         )
         .fetch_optional(&self.pool)
@@ -177,7 +173,10 @@ impl IPositionRepository for PositionPostgresRepository {
     }
 
     async fn get_all(&self) -> Result<Vec<Position>, PositionRepoError> {
-        let result = sqlx::query_as!(PositionRow, "SELECT * FROM positions")
+        let result = sqlx::query_as!(
+            PositionRow,
+            "SELECT id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted FROM positions"
+        )
             .fetch_all(&self.pool)
             .await;
 

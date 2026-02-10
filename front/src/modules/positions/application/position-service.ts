@@ -57,7 +57,6 @@ export class PositionService {
       description: props.description,
       appliedOn: props.appliedOn,
       url: props.url,
-      initialComment: props.initialComment,
       status: props.status,
     };
   }

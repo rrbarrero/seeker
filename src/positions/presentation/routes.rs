@@ -116,7 +116,6 @@ mod tests {
             "description": "Senior Rust Developer needed",
             "applied_on": "Fri, 27 Oct 2023 12:00:00 +0000", 
             "url": "https://rust.com/jobs/1",
-            "initial_comment": "Applied via LinkedIn",
             "status": "CvSent"
         }}"#,
             user_id
@@ -209,7 +208,6 @@ mod tests {
             "description": "Updated description",
             "applied_on": "Fri, 27 Oct 2023 12:00:00 +0000",
             "url": "https://example.com/jobs/1",
-            "initial_comment": "Updated comment",
             "status": "CvSent"
         }
         "#;

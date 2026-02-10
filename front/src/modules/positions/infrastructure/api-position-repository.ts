@@ -17,7 +17,6 @@ type PositionDto = {
   description: string;
   applied_on: string;
   url: string;
-  initial_comment: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -31,7 +30,6 @@ type CreatePositionDto = {
   description: string;
   applied_on: string;
   url: string;
-  initial_comment: string;
   status: string;
 };
 
@@ -43,7 +41,6 @@ const toDomainProps = (dto: PositionDto): PositionProps => ({
   description: dto.description,
   appliedOn: dto.applied_on,
   url: dto.url,
-  initialComment: dto.initial_comment,
   status: dto.status as PositionProps["status"],
   createdAt: dto.created_at,
   updatedAt: dto.updated_at,
@@ -57,7 +54,6 @@ const toCreateDto = (input: CreatePositionInput): CreatePositionDto => ({
   description: input.description,
   applied_on: input.appliedOn,
   url: input.url,
-  initial_comment: input.initialComment,
   status: input.status,
 });
 
@@ -67,7 +63,6 @@ const toUpdateDto = (input: UpdatePositionInput): CreatePositionDto => ({
   description: input.description,
   applied_on: input.appliedOn,
   url: input.url,
-  initial_comment: input.initialComment,
   status: input.status,
 });
 
