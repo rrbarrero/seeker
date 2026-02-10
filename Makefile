@@ -66,3 +66,6 @@ logs:
 
 database-reset:
 	cargo sqlx database reset
+
+rust-update:
+	docker compose run --rm test /bin/bash -c "cargo update && cd workers/email && cargo update"

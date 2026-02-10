@@ -44,6 +44,18 @@ services:
       - /app/.next
     restart: on-failure
 
+  email-worker:
+    build:
+      context: ./workers/email
+      dockerfile: Dockerfile
+    container_name: best-seeker-email-worker
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      RUST_LOG: warn
+    restart: on-failure
+
   test:
     build:
       context: .
