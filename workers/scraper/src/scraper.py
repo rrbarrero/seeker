@@ -2,6 +2,8 @@ import cloudscraper
 import logging
 import random
 import time
+import re
+from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,6 +17,28 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 ]
+
+def clean_html(html_content: str) -> str:
+    """
+    Cleans HTML content:
+    - Removes all tags
+    - Extracts visible text
+    - Normalizes whitespace (removes multiple spaces/newlines)
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Remove script and style elements
+    for script_or_style in soup(["script", "style"]):
+        script_or_style.decompose()
+
+    # Get text
+    text = soup.get_text(separator=' ')
+    
+    # Normalize whitespace: replace multiple spaces/newlines with a single space
+    # and strip leading/trailing whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
 
 def scrape_url(url: str) -> str:
     """
@@ -61,7 +85,7 @@ def scrape_url(url: str) -> str:
     try:
         response = scraper.get(url, headers=headers)
         response.raise_for_status()
-        return response.text
+        return clean_html(response.text)
     except Exception as e:
         logger.error(f"Failed to scrape {url} with UA {user_agent}: {e}")
         raise
