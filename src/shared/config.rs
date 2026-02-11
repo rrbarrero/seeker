@@ -25,6 +25,10 @@ pub struct Config {
     pub observability_enabled: bool,
     pub service_name: String,
     pub frontend_url: String,
+    pub rate_limit_enabled: bool,
+    pub rate_limit_requests_per_second: u32,
+    pub rate_limit_burst: u32,
+    pub rate_limit_trust_forwarded_headers: bool,
 }
 
 impl Default for Config {
@@ -73,6 +77,24 @@ impl Default for Config {
             service_name: env::var("SERVICE_NAME").unwrap_or_else(|_| "best-seeker".to_string()),
             frontend_url: env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:3001".to_string()),
+            rate_limit_enabled: env::var("RATE_LIMIT_ENABLED")
+                .unwrap_or_else(|_| "false".to_string())
+                .to_lowercase()
+                .as_str()
+                == "true",
+            rate_limit_requests_per_second: env::var("RATE_LIMIT_RPS")
+                .unwrap_or_else(|_| "10".to_string())
+                .parse()
+                .unwrap_or(10),
+            rate_limit_burst: env::var("RATE_LIMIT_BURST")
+                .unwrap_or_else(|_| "20".to_string())
+                .parse()
+                .unwrap_or(20),
+            rate_limit_trust_forwarded_headers: env::var("RATE_LIMIT_TRUST_FORWARDED_HEADERS")
+                .unwrap_or_else(|_| "false".to_string())
+                .to_lowercase()
+                .as_str()
+                == "true",
         }
     }
 }
@@ -109,6 +131,10 @@ impl Config {
             observability_enabled: false,
             service_name: "best-seeker-test".to_string(),
             frontend_url: "http://localhost:3001".to_string(),
+            rate_limit_enabled: false,
+            rate_limit_requests_per_second: 10,
+            rate_limit_burst: 20,
+            rate_limit_trust_forwarded_headers: false,
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 use utoipa::OpenApi;
 
 use axum::http::HeaderName;
@@ -90,6 +90,21 @@ async fn main() {
                 ])
                 .expose_headers([HeaderName::from_static("x-request-id")]),
         );
+    let app = if config.rate_limit_enabled {
+        let rate_limit_state = shared::infrastructure::http::RateLimitState::new(
+            shared::infrastructure::http::RateLimitConfig {
+                requests_per_second: config.rate_limit_requests_per_second,
+                burst: config.rate_limit_burst,
+                trust_forwarded_headers: config.rate_limit_trust_forwarded_headers,
+            },
+        );
+        app.layer(middleware::from_fn_with_state(
+            rate_limit_state,
+            shared::infrastructure::http::rate_limit,
+        ))
+    } else {
+        app
+    };
     let app = if let Some(observability) = observability.clone() {
         let trace_layer = TraceLayer::new_for_http()
             .make_span_with(|request: &axum::http::Request<_>| {
@@ -127,7 +142,11 @@ async fn main() {
     let addr = format!("{}:{}", config.server_host, config.server_port);
     let listener = TcpListener::bind(&addr).await.unwrap();
     println!("Listening on http://{}", addr);
-    let result = axum::serve(listener, app).await;
+    let result = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await;
     if let Some(ref observability) = observability {
         shared::infrastructure::observability::shutdown_observability(observability);
     }

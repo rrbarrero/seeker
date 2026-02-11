@@ -30,3 +30,13 @@ CORS_ALLOWED_ORIGIN=http://localhost:3001
 # === Frontend Integration ===
 # Public URL of the frontend application (used for email links, etc.)
 FRONTEND_URL=http://localhost:3001
+
+# === Rate Limiting ===
+# Enable/disable global rate limiting middleware
+RATE_LIMIT_ENABLED=false
+# Requests per second per client (token bucket fill rate)
+RATE_LIMIT_RPS=10
+# Maximum burst size per client
+RATE_LIMIT_BURST=20
+# Trust X-Forwarded-For / X-Real-IP headers for client identification
+RATE_LIMIT_TRUST_FORWARDED_HEADERS=false
