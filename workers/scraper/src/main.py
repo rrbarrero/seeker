@@ -14,8 +14,9 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 from db import get_next_job, complete_job, fail_job
-from s3 import upload_html
+from s3 import upload_json
 from scraper import scrape_url
+from analysis_service import FakeAnalysisService, GroqAnalysisService
 
 # Configure Logging
 logging.basicConfig(
@@ -52,6 +53,29 @@ def init_tracing():
 
 tracer = init_tracing()
 
+# Initialize Analysis Service
+llm_selected = os.getenv("LLM_SELECTED", "fake").lower()
+if llm_selected == "groq":
+    logger.info("Using GroqAnalysisService")
+    analysis_service = GroqAnalysisService()
+else:
+    logger.info("Using FakeAnalysisService")
+    analysis_service = FakeAnalysisService()
+DEFAULT_PROMPT = """Extract the following job information from the provided text:
+- title: Job title
+- published_at: Publication date
+- requirements: List of requirements
+- summary: Brief summary of the role
+- stack: List of technologies/stack mentioned
+- salary: Salary information
+
+If any information is missing, return an empty string "" (or an empty list for list fields).
+Return ONLY the structured information. Do not add any conversational text.
+
+Text to analyze:
+{text}
+"""
+
 # Config
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1.0"))
 
@@ -85,15 +109,21 @@ def process_job(job):
             # 1. Scrape
             with tracer.start_as_current_span("scrape_url") as scrape_span:
                 scrape_span.set_attribute("url", url)
-                html_content = scrape_url(url)
+                cleaned_text = scrape_url(url)
             
-            # 2. Upload to S3
-            s3_key = f"scraper/{user_id}/{position_id}.html"
+            # 2. Analyze (LLM / Fake)
+            with tracer.start_as_current_span("analyze_content") as analyze_span:
+                analyze_span.set_attribute("analyzer", "FakeAnalysisService")
+                analysis_result = analysis_service.analyze(cleaned_text, DEFAULT_PROMPT)
+                json_content = analysis_result.to_json()
+
+            # 3. Upload to S3
+            s3_key = f"scraper/{user_id}/{position_id}.json"
             with tracer.start_as_current_span("upload_s3") as s3_span:
                 s3_span.set_attribute("s3.key", s3_key)
-                upload_html(html_content, s3_key)
+                upload_json(json_content, s3_key)
             
-            # 3. Complete
+            # 4. Complete
             complete_job(job_id, s3_key)
             span.set_status(trace.Status(trace.StatusCode.OK))
             logger.info(f"Job {job_id} completed successfully. S3 Key: {s3_key}")

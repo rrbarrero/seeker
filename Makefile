@@ -128,3 +128,17 @@ s3-get:
 
 garage-provision:
 	./scripts/provision_garage.sh
+
+scraper-test:
+	@if [ -z "$(URL)" ]; then echo "Usage: make scraper-test URL=https://example.com"; exit 1; fi
+	docker compose exec -T db psql -U $${POSTGRES_USER} -d $${POSTGRES_DB} -c \
+		"INSERT INTO scraper_queue (url, user_id, position_id, status) VALUES ('$(URL)', '00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000000', 'PENDING');"
+
+scraper-up:
+	docker compose up -d scraper
+
+scraper-logs:
+	docker compose logs -f scraper
+
+scraper-stop:
+	docker compose stop scraper

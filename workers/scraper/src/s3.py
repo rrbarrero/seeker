@@ -28,3 +28,15 @@ def upload_html(content: str, key: str):
         Body=content,
         ContentType="text/html"
     )
+
+def upload_json(content: str, key: str):
+    """
+    Uploads JSON string to S3.
+    """
+    s3 = get_s3_client()
+    s3.put_object(
+        Bucket=BUCKET_NAME,
+        Key=key,
+        Body=content,
+        ContentType="application/json"
+    )

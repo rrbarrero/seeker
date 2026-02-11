@@ -89,6 +89,9 @@ services:
       AWS_ENDPOINT_URL: http://garage:3900
       AWS_REGION: us-east-1
       S3_BUCKET_NAME: scraper
+      LLM_SELECTED: ${LLM_SELECTED}
+      GROQ_API_TOKEN: ${GROQ_API_TOKEN}
+      GROQ_MODEL: ${GROQ_MODEL}
       RUST_LOG: info
     restart: on-failure
 

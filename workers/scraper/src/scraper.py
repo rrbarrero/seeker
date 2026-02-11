@@ -18,12 +18,45 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 ]
 
+def deduplicate_content(text: str, max_ngram: int = 20) -> str:
+    """
+    Removes consecutive duplicate word sequences (n-grams).
+    Example: 'Clear text Clear text' -> 'Clear text'
+    """
+    words = text.split()
+    if not words:
+        return ""
+    
+    result = []
+    i = 0
+    while i < len(words):
+        found_dup = False
+        for n in range(max_ngram, 0, -1):
+            if i + 2*n <= len(words):
+                seq1 = words[i:i+n]
+                seq2 = words[i+n:i+2*n]
+                if seq1 == seq2:
+                    result.extend(seq1)
+                    i += n
+                    while i + n <= len(words) and words[i:i+n] == seq1:
+                        i += n
+                    found_dup = True
+                    break
+        
+        if not found_dup:
+            result.append(words[i])
+            i += 1
+            
+    return " ".join(result)
+
 def clean_html(html_content: str) -> str:
     """
     Cleans HTML content:
-    - Removes all tags
-    - Extracts visible text
-    - Normalizes whitespace (removes multiple spaces/newlines)
+    - Removes all tags, scripts, and styles
+    - Uses a pipe separator to identify block boundaries
+    - Deduplicates identical blocks (phrases)
+    - Normalizes whitespace
+    - Removes consecutive duplicate word sequences
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     
@@ -31,12 +64,39 @@ def clean_html(html_content: str) -> str:
     for script_or_style in soup(["script", "style"]):
         script_or_style.decompose()
 
-    # Get text
-    text = soup.get_text(separator=' ')
+    # Get text using a separator to identify boundaries between tags
+    # This helps catch duplication where content is repeated in different tags
+    raw_text = soup.get_text(separator='|')
     
-    # Normalize whitespace: replace multiple spaces/newlines with a single space
-    # and strip leading/trailing whitespace
+    # Phrase-level deduplication (preserve order)
+    blocks = [b.strip() for b in raw_text.split('|') if b.strip()]
+    seen = set()
+    recent_blocks = [] # To handle short repetitions
+    unique_blocks = []
+    
+    for b in blocks:
+        words_in_block = b.split()
+        num_words = len(words_in_block)
+        
+        if num_words >= 2:
+            if b not in seen:
+                unique_blocks.append(b)
+                seen.add(b)
+        elif num_words == 1:
+            # For 1-word blocks, only deduplicate if they appeared very recently
+            if b not in recent_blocks:
+                unique_blocks.append(b)
+                recent_blocks.append(b)
+                if len(recent_blocks) > 10:
+                    recent_blocks.pop(0)
+
+    text = " ".join(unique_blocks)
+    
+    # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Final pass: remove any remaining consecutive word sequences
+    text = deduplicate_content(text)
     
     return text
 
