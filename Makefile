@@ -74,3 +74,48 @@ database-reset:
 
 rust-update:
 	docker compose run --rm test /bin/bash -c "cargo update && cd workers/email && cargo update"
+
+# Garage / S3 Operations (Dev)
+GARAGE_CONTAINER := best-seeker-garage
+
+# Load env vars if .env exists
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
+# Force loading variables from .env strictly for this command to avoid conflicts with global AWS credentials
+AWS_CMD := set -a && [ -f .env ] && . ./.env && set +a && \
+	AWS_ACCESS_KEY_ID=$${AWS_ACCESS_KEY_ID} \
+	AWS_SECRET_ACCESS_KEY=$${AWS_SECRET_ACCESS_KEY} \
+	AWS_DEFAULT_REGION=$${AWS_REGION} \
+	aws --endpoint-url $${AWS_ENDPOINT_URL}
+
+
+garage-up:
+	docker compose up -d garage
+	./scripts/provision_garage.sh
+
+garage-logs:
+	docker compose logs -f garage
+
+garage-status:
+	docker exec $(GARAGE_CONTAINER) /garage status
+
+garage-init-dev:
+	@echo "Initializing Garage Dev Environment..."
+	-docker exec $(GARAGE_CONTAINER) /garage key create dev-key
+	-docker exec $(GARAGE_CONTAINER) /garage bucket create dev-bucket
+	-docker exec $(GARAGE_CONTAINER) /garage bucket allow --read --write --owner dev-bucket --key dev-key
+	@echo "Garage initialized."
+
+garage-destroy:
+	docker compose stop garage
+	docker compose rm -f garage
+	-docker volume rm best-seeker_garage_meta best-seeker_garage_data
+
+s3-ls:
+	$(AWS_CMD) s3 ls
+
+garage-provision:
+	./scripts/provision_garage.sh

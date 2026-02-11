@@ -13,6 +13,24 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh
 
+  garage:
+    image: dxflrs/garage:v2.2.0
+    container_name: best-seeker-garage
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN}
+    ports:
+      - "3900:3900" # S3 API
+      - "3901:3901" # RPC
+      - "3902:3902" # Web
+      - "3903:3903" # Admin API
+    volumes:
+      - ./docker/garage/garage.toml:/etc/garage.toml
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+
   backend:
     build: .
     container_name: best-seeker-backend
@@ -71,3 +89,5 @@ services:
 
 volumes:
   postgres_data:
+  garage_meta:
+  garage_data:
