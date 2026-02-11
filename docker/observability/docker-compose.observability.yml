@@ -3,7 +3,14 @@ services:
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OBS_ENABLED: "true"
-      RUST_LOG: warn
+      RUST_LOG: info
+    depends_on:
+      - alloy
+  email-worker:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OBS_ENABLED: "true"
+      SERVICE_NAME: email-worker
     depends_on:
       - alloy
   grafana:
@@ -19,6 +26,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ./docker/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./docker/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/observability/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
     depends_on:
       - prometheus
       - loki

@@ -1,4 +1,9 @@
 use anyhow::Context;
+use opentelemetry::KeyValue;
+use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::{Resource, logs::SdkLoggerProvider, trace::SdkTracerProvider};
+use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
 use serde::{Deserialize, Serialize};
 use sqlx::{
     Pool, Postgres,
@@ -8,7 +13,12 @@ use std::env;
 use std::sync::Arc;
 use tokio::time::{Duration, sleep};
 use tracing::{error, info};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
+use opentelemetry::trace::{
+    SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState, TracerProvider,
+};
 
 #[async_trait::async_trait]
 pub trait EmailSender: Send + Sync {
@@ -42,6 +52,8 @@ struct EmailJob {
     payload: sqlx::types::Json<EmailPayload>,
     #[allow(dead_code)]
     processed: bool,
+    user_id: Option<Uuid>,
+    trace_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -53,9 +65,29 @@ struct EmailPayload {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
     dotenvy::dotenv().ok();
+    let observability_enabled = env::var("OBS_ENABLED")
+        .unwrap_or_else(|_| "false".to_string())
+        .to_lowercase()
+        .as_str()
+        == "true";
+    let otlp_endpoint =
+        env::var("OTEL_EXPORTER_OTLP_ENDPOINT").unwrap_or_else(|_| "http://localhost:4317".to_string());
+    let service_name = env::var("SERVICE_NAME").unwrap_or_else(|_| "email-worker".to_string());
+
+    let _observability = if observability_enabled {
+        match init_observability(&service_name, &otlp_endpoint) {
+            Ok(obs) => Some(obs),
+            Err(err) => {
+                eprintln!("Observability disabled: {err}");
+                tracing_subscriber::fmt::init();
+                None
+            }
+        }
+    } else {
+        tracing_subscriber::fmt::init();
+        None
+    };
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     info!("Starting Email Worker...");
@@ -75,6 +107,63 @@ async fn main() -> anyhow::Result<()> {
     }
 
     listen_for_jobs(pool, email_sender).await
+}
+
+struct Observability {
+    _logger_provider: SdkLoggerProvider,
+    _tracer_provider: SdkTracerProvider,
+}
+
+fn init_observability(service_name: &str, otlp_endpoint: &str) -> anyhow::Result<Observability> {
+    let resource = Resource::builder()
+        .with_attributes(vec![KeyValue::new(SERVICE_NAME, service_name.to_string())])
+        .build();
+
+    let trace_exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint(otlp_endpoint)
+        .build()
+        .context("OTLP trace exporter error")?;
+
+    let tracer_provider = SdkTracerProvider::builder()
+        .with_resource(resource.clone())
+        .with_batch_exporter(trace_exporter)
+        .build();
+
+    let static_service_name: &'static str = Box::leak(service_name.to_string().into_boxed_str());
+    let tracer = tracer_provider.tracer(static_service_name);
+
+    let log_exporter = opentelemetry_otlp::LogExporter::builder()
+        .with_tonic()
+        .with_endpoint(otlp_endpoint)
+        .build()
+        .context("OTLP log exporter error")?;
+
+    let logger_provider = SdkLoggerProvider::builder()
+        .with_resource(resource)
+        .with_batch_exporter(log_exporter)
+        .build();
+
+    let otel_logs_layer = OpenTelemetryTracingBridge::new(&logger_provider);
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .json()
+        .with_current_span(true)
+        .with_span_list(true);
+
+    let otel_trace_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt_layer)
+        .with(otel_trace_layer)
+        .with(otel_logs_layer)
+        .init();
+
+    Ok(Observability {
+        _logger_provider: logger_provider,
+        _tracer_provider: tracer_provider,
+    })
 }
 
 async fn process_pending_jobs(
@@ -150,14 +239,33 @@ async fn process_job_transactional(
     let mut tx = pool.begin().await?;
 
     let job_opt = sqlx::query_as::<_, EmailJob>(
-        "SELECT id, payload, processed FROM email_queue WHERE id = $1 AND processed = false FOR UPDATE SKIP LOCKED"
+        "SELECT id, payload, processed, user_id, trace_id FROM email_queue WHERE id = $1 AND processed = false FOR UPDATE SKIP LOCKED"
     )
     .bind(job_id)
     .fetch_optional(&mut *tx)
     .await?;
 
     if let Some(job) = job_opt {
-        info!("Processing job {}", job.id);
+        let trace_id = job.trace_id.as_deref().unwrap_or("-");
+        let user_id = job
+            .user_id
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| "-".to_string());
+
+        let span = tracing::info_span!(
+            "email_job",
+            job_id = %job.id,
+            user_id = %user_id,
+            trace_id = %trace_id
+        );
+
+        if let Some(parent_ctx) = trace_id_to_parent_ctx(trace_id) {
+            span.set_parent(parent_ctx);
+        }
+
+        let _enter = span.enter();
+
+        info!(job_id = %job.id, user_id = %user_id, trace_id = %trace_id, "Processing job");
         let payload = job.payload.0;
 
         match sender
@@ -173,7 +281,12 @@ async fn process_job_transactional(
                 .await?;
 
                 tx.commit().await?;
-                info!("Job {} completed successfully.", job.id);
+                info!(
+                    job_id = %job.id,
+                    user_id = %user_id,
+                    trace_id = %trace_id,
+                    "Job completed successfully."
+                );
             }
             Err(e) => {
                 error!("Failed to send email: {:?}", e);
@@ -183,4 +296,35 @@ async fn process_job_transactional(
     }
 
     Ok(())
+}
+
+fn trace_id_to_parent_ctx(trace_id: &str) -> Option<opentelemetry::Context> {
+    if trace_id.len() != 32 {
+        return None;
+    }
+
+    let mut bytes = [0u8; 16];
+    for i in 0..16 {
+        let idx = i * 2;
+        let byte = u8::from_str_radix(&trace_id[idx..idx + 2], 16).ok()?;
+        bytes[i] = byte;
+    }
+
+    let trace_id = TraceId::from_bytes(bytes);
+    let span_id = {
+        let uuid = Uuid::new_v4();
+        let mut span_bytes = [0u8; 8];
+        span_bytes.copy_from_slice(&uuid.as_bytes()[..8]);
+        SpanId::from_bytes(span_bytes)
+    };
+
+    let span_context = SpanContext::new(
+        trace_id,
+        span_id,
+        TraceFlags::SAMPLED,
+        false,
+        TraceState::default(),
+    );
+
+    Some(opentelemetry::Context::new().with_remote_span_context(span_context))
 }

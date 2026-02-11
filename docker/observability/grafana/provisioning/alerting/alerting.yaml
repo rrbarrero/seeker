@@ -1,0 +1,97 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: best-seeker-alerts
+    folder: BestSeeker
+    interval: 1m
+    rules:
+      - uid: backend-5xx-rate
+        title: Backend 5xx rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(http_requests_total{job="best-seeker",http_status_code=~"5.."}[5m]) / rate(http_requests_total{job="best-seeker"}[5m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.02]
+                  operator:
+                    type: and
+                  query:
+                    params: [B]
+                  reducer:
+                    type: last
+                  type: query
+              intervalMs: 1000
+              maxDataPoints: 43200
+        for: 5m
+        annotations:
+          summary: Backend 5xx rate > 2% in 5m
+        labels:
+          severity: warning
+
+      - uid: email-worker-errors
+        title: Email worker errors
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: sum(rate({job="email-worker",service_name="email-worker",level=~"ERROR|WARN"}[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [B]
+                  reducer:
+                    type: last
+                  type: query
+              intervalMs: 1000
+              maxDataPoints: 43200
+        for: 5m
+        annotations:
+          summary: Errors detected in email-worker in the last 5m
+        labels:
+          severity: warning

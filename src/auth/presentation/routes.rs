@@ -77,6 +77,8 @@ mod tests {
             _email: &str,
             _subject: &str,
             _body: &str,
+            _user_id: uuid::Uuid,
+            _trace_id: Option<String>,
         ) -> Result<(), AuthError> {
             Ok(())
         }
