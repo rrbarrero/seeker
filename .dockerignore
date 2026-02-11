@@ -1,21 +1,52 @@
+# Rust artifacts
 target/
+**/*.rs.bk
+
+# Node.js/Frontend artifacts
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+**/build/
+**/coverage/
+**/pnpm-debug.log*
+
+# Python/Scraper artifacts
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.uv/
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+
+# IDE and System files
 .git/
 .agent/
 .github/
 .vscode/
+.idea/
 .ignored-folder/
-.env
+.history/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+
+# Docker/CI files
 Dockerfile
+Dockerfile.*
 docker-compose.yml
 docker/
 README.md
-node_modules
-.next
-out
-build
-coverage
-.DS_Store
-*.log
-*.swp
-*.swo
-.history
+LICENSE
+.gitignore
+.dockerignore

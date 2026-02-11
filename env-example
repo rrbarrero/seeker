@@ -1,6 +1,8 @@
 # === Application Environment ===
 # development, production, testing
 ENVIRONMENT=development
+# Enable/disable OpenTelemetry observability
+OBS_ENABLED=false
 
 # === Database Configuration ===
 # Postgres user for connection

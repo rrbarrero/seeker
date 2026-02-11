@@ -20,7 +20,7 @@ impl IEmailQueueEnqueuer for PostgresEmailQueueEnqueuer {
         subject: &str,
         body: &str,
         user_id: uuid::Uuid,
-        trace_id: Option<String>,
+        trace_context: Option<String>,
     ) -> Result<(), AuthError> {
         let payload = serde_json::json!({
             "to": to,
@@ -32,7 +32,7 @@ impl IEmailQueueEnqueuer for PostgresEmailQueueEnqueuer {
             "INSERT INTO email_queue (payload, user_id, trace_id) VALUES ($1, $2, $3)",
             payload,
             user_id,
-            trace_id
+            trace_context
         )
         .execute(&self.pool)
         .await

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO scraper_queue (url, user_id, position_id, trace_id, status) VALUES ($1, $2, $3, $4, 'PENDING')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b95f244455dbb9b03b4a15acc7ccbc031cf54464f4262b1d47badde897145bdb"
+}

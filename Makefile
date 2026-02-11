@@ -112,10 +112,19 @@ garage-init-dev:
 garage-destroy:
 	docker compose stop garage
 	docker compose rm -f garage
-	-docker volume rm best-seeker_garage_meta best-seeker_garage_data
+	-docker volume ls -q | grep -E "garage_meta|garage_data" | xargs -r docker volume rm
 
 s3-ls:
-	$(AWS_CMD) s3 ls
+	$(AWS_CMD) s3 ls $(BUCKET)
+
+s3-ls-scraper:
+	$(AWS_CMD) s3 ls s3://$${S3_SCRAPER_BUCKET} --recursive
+
+# Download a specific file from the scraper bucket
+# Example: make s3-get S3_PATH=scraper/57773374-6d3b-4524-8173-4418c5b9f5e5/fc5ec304-0ddd-40a1-b636-03e1c75c6a5d.html
+s3-get:
+	@if [ -z "$(S3_PATH)" ]; then echo "Usage: make s3-get S3_PATH=scraper/user_id/pos_id.html [DEST=./file.html]"; exit 1; fi
+	$(AWS_CMD) s3 cp s3://$${S3_SCRAPER_BUCKET}/$(S3_PATH) $(if $(DEST),$(DEST),.)
 
 garage-provision:
 	./scripts/provision_garage.sh

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use sqlx::postgres::PgPool;
 use tracing::{error, warn};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
 
 use crate::positions::domain::{
@@ -66,6 +67,15 @@ impl IPositionRepository for PositionPostgresRepository {
     async fn save(&self, position: Position) -> Result<PositionUuid, PositionRepoError> {
         let position_id = position.id;
         let user_id = position.user_id;
+
+        // Start transaction
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| PositionRepoError::DatabaseError(e.to_string()))?;
+
+        // 1. Insert Position
         sqlx::query!(
             "INSERT INTO positions (id, user_id, company, role_title, description, applied_on, url, status, created_at, updated_at, deleted_at, deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             position.id.value(),
@@ -81,7 +91,7 @@ impl IPositionRepository for PositionPostgresRepository {
             position.deleted_at.map(|d| d.naive_utc()),
             position.deleted,
         )
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| {
             error!(
@@ -93,6 +103,39 @@ impl IPositionRepository for PositionPostgresRepository {
             );
             PositionRepoError::DatabaseError(e.to_string())
         })?;
+
+        // 2. Insert into scraper_queue
+        // Extract traceparent from current span for full propagation
+        let context = tracing::Span::current().context();
+        let mut carrier = std::collections::HashMap::new();
+        opentelemetry::global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&context, &mut carrier);
+        });
+        let traceparent = carrier.get("traceparent").cloned().unwrap_or_default();
+
+        sqlx::query!(
+            "INSERT INTO scraper_queue (url, user_id, position_id, trace_id, status) VALUES ($1, $2, $3, $4, 'PENDING')",
+            position.url.value(),
+            position.user_id.value(),
+            position.id.value(),
+            traceparent,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            error!(
+                position_id = %position_id.value(),
+                error_kind = "database_error",
+                error = %e,
+                "position_repo.save_scraper failed"
+            );
+            PositionRepoError::DatabaseError(e.to_string())
+        })?;
+
+        // Commit transaction
+        tx.commit()
+            .await
+            .map_err(|e| PositionRepoError::DatabaseError(e.to_string()))?;
 
         Ok(position.id)
     }

@@ -1,5 +1,6 @@
 use anyhow::Context;
 use opentelemetry::KeyValue;
+use opentelemetry::trace::TracerProvider;
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{Resource, logs::SdkLoggerProvider, trace::SdkTracerProvider};
@@ -16,9 +17,6 @@ use tracing::{error, info};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
-use opentelemetry::trace::{
-    SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState, TracerProvider,
-};
 
 #[async_trait::async_trait]
 pub trait EmailSender: Send + Sync {
@@ -71,8 +69,8 @@ async fn main() -> anyhow::Result<()> {
         .to_lowercase()
         .as_str()
         == "true";
-    let otlp_endpoint =
-        env::var("OTEL_EXPORTER_OTLP_ENDPOINT").unwrap_or_else(|_| "http://localhost:4317".to_string());
+    let otlp_endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+        .unwrap_or_else(|_| "http://localhost:4317".to_string());
     let service_name = env::var("SERVICE_NAME").unwrap_or_else(|_| "email-worker".to_string());
 
     let _observability = if observability_enabled {
@@ -259,8 +257,8 @@ async fn process_job_transactional(
             trace_id = %trace_id
         );
 
-        if let Some(parent_ctx) = trace_id_to_parent_ctx(trace_id) {
-            span.set_parent(parent_ctx);
+        if let Some(parent_context) = extract_parent_context(trace_id) {
+            span.set_parent(parent_context);
         }
 
         let _enter = span.enter();
@@ -298,33 +296,10 @@ async fn process_job_transactional(
     Ok(())
 }
 
-fn trace_id_to_parent_ctx(trace_id: &str) -> Option<opentelemetry::Context> {
-    if trace_id.len() != 32 {
-        return None;
-    }
+fn extract_parent_context(traceparent: &str) -> Option<opentelemetry::Context> {
+    let mut carrier = std::collections::HashMap::new();
+    carrier.insert("traceparent".to_string(), traceparent.to_string());
 
-    let mut bytes = [0u8; 16];
-    for i in 0..16 {
-        let idx = i * 2;
-        let byte = u8::from_str_radix(&trace_id[idx..idx + 2], 16).ok()?;
-        bytes[i] = byte;
-    }
-
-    let trace_id = TraceId::from_bytes(bytes);
-    let span_id = {
-        let uuid = Uuid::new_v4();
-        let mut span_bytes = [0u8; 8];
-        span_bytes.copy_from_slice(&uuid.as_bytes()[..8]);
-        SpanId::from_bytes(span_bytes)
-    };
-
-    let span_context = SpanContext::new(
-        trace_id,
-        span_id,
-        TraceFlags::SAMPLED,
-        false,
-        TraceState::default(),
-    );
-
-    Some(opentelemetry::Context::new().with_remote_span_context(span_context))
+    let propagator = opentelemetry::global::get_text_map_propagator(|p| p.extract(&carrier));
+    Some(propagator)
 }

@@ -10,6 +10,6 @@ pub trait IEmailQueueEnqueuer: Send + Sync {
         subject: &str,
         body: &str,
         user_id: uuid::Uuid,
-        trace_id: Option<String>,
+        trace_context: Option<String>,
     ) -> Result<(), AuthError>;
 }

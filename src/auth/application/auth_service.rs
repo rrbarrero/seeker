@@ -1,7 +1,6 @@
 use std::str::FromStr;
 use uuid::Uuid;
 
-use opentelemetry::trace::{TraceContextExt, TraceId};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::auth::{
@@ -182,13 +181,12 @@ impl AuthService {
             verification_link
         );
 
-        let span = tracing::Span::current();
-        let trace_id = span.context().span().span_context().trace_id();
-        let trace_id = if trace_id != TraceId::INVALID {
-            Some(trace_id.to_string())
-        } else {
-            None
-        };
+        let context = tracing::Span::current().context();
+        let mut carrier = std::collections::HashMap::new();
+        opentelemetry::global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&context, &mut carrier);
+        });
+        let trace_context = carrier.get("traceparent").cloned();
 
         if let Err(e) = email_queue
             .enqueue(
@@ -196,7 +194,7 @@ impl AuthService {
                 subject,
                 &body,
                 user.id.value(),
-                trace_id,
+                trace_context,
             )
             .await
         {
@@ -250,7 +248,7 @@ mod tests {
             _subject: &str,
             _body: &str,
             _user_id: uuid::Uuid,
-            _trace_id: Option<String>,
+            _trace_context: Option<String>,
         ) -> Result<(), AuthError> {
             Ok(())
         }
