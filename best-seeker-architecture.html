@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Seeker — Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --surface: #0f1318;
+    --border: #1e2530;
+    --border-bright: #2a3545;
+    --rust: #ce4a1a;
+    --rust-dim: #7a2c0e;
+    --rust-glow: rgba(206,74,26,0.18);
+    --blue: #2196f3;
+    --blue-dim: #0d47a1;
+    --blue-glow: rgba(33,150,243,0.15);
+    --gold: #f5a623;
+    --gold-dim: #7a520e;
+    --gold-glow: rgba(245,166,35,0.15);
+    --green: #00c896;
+    --green-dim: #005040;
+    --green-glow: rgba(0,200,150,0.15);
+    --violet: #a78bfa;
+    --violet-dim: #4c1d95;
+    --violet-glow: rgba(167,139,250,0.12);
+    --text: #e8edf5;
+    --muted: #5a6a80;
+    --subtle: #8899aa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30,37,48,0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,37,48,0.6) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    padding: 6px 16px 6px 10px;
+    margin-bottom: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--rust);
+    box-shadow: 0 0 8px var(--rust);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  h1 span.rust { color: var(--rust); }
+  h1 span.dim { color: var(--muted); }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* =========  LAYERS  ========= */
+  .layer {
+    margin-bottom: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .layer:nth-child(1) { animation-delay: 0.1s; }
+  .layer:nth-child(2) { animation-delay: 0.2s; }
+  .layer:nth-child(3) { animation-delay: 0.3s; }
+  .layer:nth-child(4) { animation-delay: 0.4s; }
+  .layer:nth-child(5) { animation-delay: 0.5s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .layer-inner {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .layer-inner:hover { border-color: var(--border-bright); }
+
+  /* ===  NODES  === */
+  .nodes {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .node {
+    flex: 1;
+    min-width: 160px;
+    border-radius: 8px;
+    padding: 16px 18px;
+    border: 1px solid;
+    cursor: default;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .node::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .node:hover { transform: translateY(-2px); }
+  .node:hover::before { opacity: 1; }
+
+  /* Rust theme */
+  .node.rust {
+    background: color-mix(in srgb, var(--rust-dim) 20%, var(--surface));
+    border-color: var(--rust-dim);
+  }
+  .node.rust::before { background: var(--rust-glow); }
+  .node.rust:hover { box-shadow: 0 4px 24px var(--rust-glow); }
+  .node.rust .node-icon { color: var(--rust); }
+  .node.rust .tag { background: var(--rust-dim); color: var(--rust); }
+
+  /* Blue theme */
+  .node.blue {
+    background: color-mix(in srgb, var(--blue-dim) 20%, var(--surface));
+    border-color: var(--blue-dim);
+  }
+  .node.blue::before { background: var(--blue-glow); }
+  .node.blue:hover { box-shadow: 0 4px 24px var(--blue-glow); }
+  .node.blue .node-icon { color: var(--blue); }
+  .node.blue .tag { background: var(--blue-dim); color: var(--blue); }
+
+  /* Gold theme */
+  .node.gold {
+    background: color-mix(in srgb, var(--gold-dim) 20%, var(--surface));
+    border-color: var(--gold-dim);
+  }
+  .node.gold::before { background: var(--gold-glow); }
+  .node.gold:hover { box-shadow: 0 4px 24px var(--gold-glow); }
+  .node.gold .node-icon { color: var(--gold); }
+  .node.gold .tag { background: var(--gold-dim); color: var(--gold); }
+
+  /* Green theme */
+  .node.green {
+    background: color-mix(in srgb, var(--green-dim) 20%, var(--surface));
+    border-color: var(--green-dim);
+  }
+  .node.green::before { background: var(--green-glow); }
+  .node.green:hover { box-shadow: 0 4px 24px var(--green-glow); }
+  .node.green .node-icon { color: var(--green); }
+  .node.green .tag { background: var(--green-dim); color: var(--green); }
+
+  /* Violet theme */
+  .node.violet {
+    background: color-mix(in srgb, var(--violet-dim) 20%, var(--surface));
+    border-color: var(--violet-dim);
+  }
+  .node.violet::before { background: var(--violet-glow); }
+  .node.violet:hover { box-shadow: 0 4px 24px var(--violet-glow); }
+  .node.violet .node-icon { color: var(--violet); }
+  .node.violet .tag { background: var(--violet-dim); color: var(--violet); }
+
+  .node-icon {
+    font-size: 20px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .node-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .node-desc {
+    font-size: 10px;
+    color: var(--subtle);
+    line-height: 1.7;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+  }
+  .tag {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  /* === FLOW ARROWS === */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0;
+    padding: 0 20px;
+  }
+  .flow-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+  }
+  .flow-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .flow-label .arrow {
+    color: var(--border-bright);
+    font-size: 14px;
+  }
+
+  /* === DDD MODULE BREAKDOWN === */
+  .ddd-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 700px) {
+    .ddd-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .ddd-col {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .ddd-col-header {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 7px 10px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .ddd-items {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ddd-item {
+    font-size: 9px;
+    color: var(--subtle);
+    background: var(--bg);
+    border-radius: 3px;
+    padding: 4px 8px;
+  }
+
+  /* Domain col colors */
+  .ddd-col.domain .ddd-col-header { background: rgba(167,139,250,0.08); color: var(--violet); }
+  .ddd-col.app .ddd-col-header    { background: rgba(245,166,35,0.08); color: var(--gold); }
+  .ddd-col.infra .ddd-col-header  { background: rgba(0,200,150,0.08); color: var(--green); }
+  .ddd-col.pres .ddd-col-header   { background: rgba(33,150,243,0.08); color: var(--blue); }
+
+  /* === DATA FLOW === */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 8px 0;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 90px;
+  }
+  .flow-step-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+  .flow-step-label {
+    font-size: 9px;
+    text-align: center;
+    color: var(--subtle);
+    line-height: 1.5;
+  }
+  .flow-step-num {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .flow-arrow {
+    font-size: 16px;
+    color: var(--border-bright);
+    flex-shrink: 0;
+    padding: 0 2px;
+    margin-bottom: 20px;
+  }
+
+  /* Tables / legend */
+  .api-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .api-grid { grid-template-columns: 1fr; } }
+
+  .api-group { }
+  .api-group-title {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .api-route {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 10px;
+    border-bottom: 1px solid rgba(30,37,48,0.5);
+  }
+  .method {
+    font-size: 8px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 2px;
+    min-width: 34px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .method.get    { background: rgba(0,200,150,0.15); color: var(--green); }
+  .method.post   { background: rgba(245,166,35,0.15); color: var(--gold); }
+  .method.put    { background: rgba(33,150,243,0.15); color: var(--blue); }
+  .method.delete { background: rgba(206,74,26,0.15); color: var(--rust); }
+  .route-path { color: var(--subtle); }
+
+  /* Obs stack */
+  .obs-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .obs-chip {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: var(--subtle);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.2s, color 0.2s;
+    flex: 1;
+    min-width: 100px;
+  }
+  .obs-chip:hover { border-color: var(--violet-dim); color: var(--violet); }
+  .obs-chip span { font-size: 16px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">
+      <div class="logo-dot"></div>
+      System Architecture
+    </div>
+    <h1><span class="rust">Best</span><span class="dim">Seeker</span></h1>
+    <p class="subtitle">Full-stack job application tracker · Modular Monolith</p>
+  </header>
+
+  <!-- ===  LAYER 1: CLIENT === -->
+  <div class="layer">
+    <div class="section-label">01 · Presentation Layer</div>
+    <div class="layer-inner">
+      <div class="nodes">
+        <div class="node blue">
+          <span class="node-icon">⬡</span>
+          <div class="node-title">Next.js 16 Frontend</div>
+          <div class="node-desc">React 19 · TypeScript · Tailwind CSS 4<br>Serves UI on :3001</div>
+          <div class="tags">
+            <span class="tag">React Hook Form</span>
+            <span class="tag">Zod</span>
+            <span class="tag">Vitest</span>
+          </div>
+        </div>
+        <div class="node blue">
+          <span class="node-icon">📋</span>
+          <div class="node-title">Pages &amp; Flows</div>
+          <div class="node-desc">Login · Registration<br>Email verification<br>Dashboard · Create/Update<br>Detail + Comments</div>
+          <div class="tags"><span class="tag">JWT Bearer</span></div>
+        </div>
+        <div class="node blue">
+          <span class="node-icon">📖</span>
+          <div class="node-title">Swagger UI</div>
+          <div class="node-desc">OpenAPI docs via utoipa<br>Served at /swagger-ui<br>Schema at /api-docs/openapi.json</div>
+          <div class="tags"><span class="tag">utoipa</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-line"></div>
+    <div class="flow-label"><span class="arrow">↕</span> HTTP / REST · JWT Bearer Tokens</div>
+    <div class="flow-line"></div>
+  </div>
+
+  <!-- === LAYER 2: BACKEND === -->
+  <div class="layer">
+    <div class="section-label">02 · Backend · Rust / Axum · :3000</div>
+    <div class="layer-inner">
+      <div class="nodes" style="margin-bottom:16px;">
+        <div class="node rust">
+          <span class="node-icon">🔐</span>
+          <div class="node-title">auth module</div>
+          <div class="node-desc">Registration · Login<br>Email verification<br>JWT sign/validate<br>Argon2 password hash</div>
+          <div class="tags"><span class="tag">jsonwebtoken</span><span class="tag">argon2</span></div>
+        </div>
+        <div class="node rust">
+          <span class="node-icon">💼</span>
+          <div class="node-title">positions module</div>
+          <div class="node-desc">Job application CRUD<br>Soft deletion<br>Comments per position</div>
+          <div class="tags"><span class="tag">sqlx</span><span class="tag">soft-delete</span></div>
+        </div>
+        <div class="node rust">
+          <span class="node-icon">⚙️</span>
+          <div class="node-title">shared module</div>
+          <div class="node-desc">Config · Middleware<br>Observability · CORS<br>Request IDs · Rate limit</div>
+          <div class="tags"><span class="tag">tower-http</span><span class="tag">OTEL</span></div>
+        </div>
+        <div class="node rust">
+          <span class="node-icon">🔌</span>
+          <div class="node-title">composition root</div>
+          <div class="node-desc">Dependency wiring<br>Axum router assembly</div>
+          <div class="tags"><span class="tag">DDD</span></div>
+        </div>
+      </div>
+
+      <!-- DDD Layer breakdown -->
+      <div class="section-label" style="margin-top:4px;">DDD Module Structure (per module)</div>
+      <div class="ddd-grid">
+        <div class="ddd-col domain">
+          <div class="ddd-col-header">domain</div>
+          <div class="ddd-items">
+            <div class="ddd-item">Entities</div>
+            <div class="ddd-item">Value Objects</div>
+            <div class="ddd-item">Repository traits</div>
+            <div class="ddd-item">Domain errors</div>
+          </div>
+        </div>
+        <div class="ddd-col app">
+          <div class="ddd-col-header">application</div>
+          <div class="ddd-items">
+            <div class="ddd-item">Use-case services</div>
+            <div class="ddd-item">Orchestration</div>
+            <div class="ddd-item">Business logic</div>
+          </div>
+        </div>
+        <div class="ddd-col infra">
+          <div class="ddd-col-header">infrastructure</div>
+          <div class="ddd-items">
+            <div class="ddd-item">PostgreSQL adapters</div>
+            <div class="ddd-item">External integrations</div>
+            <div class="ddd-item">sqlx impls</div>
+          </div>
+        </div>
+        <div class="ddd-col pres">
+          <div class="ddd-col-header">presentation</div>
+          <div class="ddd-items">
+            <div class="ddd-item">HTTP handlers</div>
+            <div class="ddd-item">DTOs</div>
+            <div class="ddd-item">Routes · API errors</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOW arrows to workers + db -->
+  <div class="flow">
+    <div class="flow-line"></div>
+    <div class="flow-label"><span class="arrow">↕</span> sqlx / PostgreSQL · LISTEN/NOTIFY · S3 API</div>
+    <div class="flow-line"></div>
+  </div>
+
+  <!-- === LAYER 3: WORKERS === -->
+  <div class="layer">
+    <div class="section-label">03 · Async Workers</div>
+    <div class="layer-inner">
+      <div class="nodes">
+        <div class="node gold">
+          <span class="node-icon">📧</span>
+          <div class="node-title">Email Worker</div>
+          <div class="node-desc">Rust · listens to<br><code>email_queue</code> via<br>PG LISTEN/NOTIFY<br>Sends verification emails</div>
+          <div class="tags"><span class="tag">Rust</span><span class="tag">LISTEN/NOTIFY</span></div>
+        </div>
+        <div class="node gold">
+          <span class="node-icon">🕷️</span>
+          <div class="node-title">Scraper Worker</div>
+          <div class="node-desc">Python · polls<br><code>scraper_queue</code><br>Scrapes job URLs<br>Runs LLM analysis</div>
+          <div class="tags"><span class="tag">Python</span><span class="tag">Groq</span><span class="tag">S3</span></div>
+        </div>
+
+        <!-- Email flow -->
+        <div class="node" style="border:1px dashed var(--border); background:transparent; flex:2; min-width:280px;">
+          <div class="section-label" style="margin-bottom:10px;">Email Async Flow</div>
+          <div class="flow-diagram">
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--rust-dim);color:var(--rust);background:var(--rust-glow);"><span>✍️</span></div>
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-label">Signup<br>stores user</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--gold-dim);color:var(--gold);background:var(--gold-glow);"><span>📝</span></div>
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-label">Insert<br>email_queue</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--green-dim);color:var(--green);background:var(--green-glow);"><span>🔔</span></div>
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-label">PG<br>NOTIFY</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--gold-dim);color:var(--gold);background:var(--gold-glow);"><span>📧</span></div>
+              <div class="flow-step-num">4</div>
+              <div class="flow-step-label">Worker<br>sends email</div>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:14px; margin-bottom:10px;">Scraper Async Flow</div>
+          <div class="flow-diagram">
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--rust-dim);color:var(--rust);background:var(--rust-glow);"><span>➕</span></div>
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-label">Insert<br>scraper_queue</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--gold-dim);color:var(--gold);background:var(--gold-glow);"><span>🕷️</span></div>
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-label">Poll &amp;<br>scrape URL</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--violet-dim);color:var(--violet);background:var(--violet-glow);"><span>🤖</span></div>
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-label">LLM<br>analysis</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="flow-step-icon" style="border-color:var(--green-dim);color:var(--green);background:var(--green-glow);"><span>☁️</span></div>
+              <div class="flow-step-num">4</div>
+              <div class="flow-step-label">Upload JSON<br>to S3/Garage</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === LAYER 4: DATA === -->
+  <div class="layer">
+    <div class="section-label">04 · Data &amp; Storage</div>
+    <div class="layer-inner">
+      <div class="nodes">
+        <div class="node green">
+          <span class="node-icon">🐘</span>
+          <div class="node-title">PostgreSQL</div>
+          <div class="node-desc">Primary store<br>SQL migrations<br>LISTEN/NOTIFY bus</div>
+          <div class="tags">
+            <span class="tag">users</span>
+            <span class="tag">positions</span>
+            <span class="tag">comments</span>
+            <span class="tag">email_queue</span>
+            <span class="tag">scraper_queue</span>
+          </div>
+        </div>
+        <div class="node green">
+          <span class="node-icon">🗄️</span>
+          <div class="node-title">Garage / S3</div>
+          <div class="node-desc">S3-compatible object storage<br>Stores scraper JSON results<br>Prod: swap for real S3</div>
+          <div class="tags"><span class="tag">S3 API</span><span class="tag">JSON</span></div>
+        </div>
+        <div class="node green">
+          <span class="node-icon">📐</span>
+          <div class="node-title">Data Model</div>
+          <div class="node-desc">
+            <b style="color:var(--green)">positions</b>: soft-delete<br>
+            <b style="color:var(--green)">comments</b>: cascade delete<br>
+            <b style="color:var(--green)">email_queue</b>: NOTIFY on insert<br>
+            <b style="color:var(--green)">scraper_queue</b>: status + retry + S3 key
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === LAYER 5: OBSERVABILITY === -->
+  <div class="layer">
+    <div class="section-label">05 · Observability (optional · OBS_ENABLED=true)</div>
+    <div class="layer-inner">
+      <div class="obs-row">
+        <div class="obs-chip"><span>📡</span> OpenTelemetry · OTLP traces &amp; logs</div>
+        <div class="obs-chip"><span>📊</span> Grafana · Dashboards</div>
+        <div class="obs-chip"><span>🔍</span> Tempo · Distributed traces</div>
+        <div class="obs-chip"><span>📋</span> Loki · Log aggregation</div>
+        <div class="obs-chip"><span>📈</span> Prometheus · Metrics</div>
+        <div class="obs-chip"><span>🆔</span> Request ID propagation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === API REFERENCE === -->
+  <div class="layer">
+    <div class="section-label">06 · API Contract</div>
+    <div class="layer-inner">
+      <div class="api-grid">
+        <div class="api-group">
+          <div class="api-group-title">Auth</div>
+          <div class="api-route"><span class="method post">POST</span><span class="route-path">/auth/signup</span></div>
+          <div class="api-route"><span class="method post">POST</span><span class="route-path">/auth/login</span></div>
+          <div class="api-route"><span class="method get">GET</span><span class="route-path">/auth/verify-email</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-title">Positions</div>
+          <div class="api-route"><span class="method get">GET</span><span class="route-path">/positions</span></div>
+          <div class="api-route"><span class="method get">GET</span><span class="route-path">/positions/{id}</span></div>
+          <div class="api-route"><span class="method post">POST</span><span class="route-path">/positions</span></div>
+          <div class="api-route"><span class="method put">PUT</span><span class="route-path">/positions/{id}</span></div>
+          <div class="api-route"><span class="method delete">DEL</span><span class="route-path">/positions/{id}</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-title">Comments</div>
+          <div class="api-route"><span class="method get">GET</span><span class="route-path">/positions/{id}/comments</span></div>
+          <div class="api-route"><span class="method get">GET</span><span class="route-path">/positions/{id}/comments/{cid}</span></div>
+          <div class="api-route"><span class="method post">POST</span><span class="route-path">/positions/{id}/comments</span></div>
+          <div class="api-route"><span class="method put">PUT</span><span class="route-path">/positions/{id}/comments/{cid}</span></div>
+          <div class="api-route"><span class="method delete">DEL</span><span class="route-path">/positions/{id}/comments/{cid}</span></div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-title">Dev Commands</div>
+          <div class="api-route"><span class="method get" style="min-width:60px;background:rgba(167,139,250,0.1);color:var(--violet);">make</span><span class="route-path">run</span></div>
+          <div class="api-route"><span class="method get" style="min-width:60px;background:rgba(167,139,250,0.1);color:var(--violet);">make</span><span class="route-path">run-obs</span></div>
+          <div class="api-route"><span class="method get" style="min-width:60px;background:rgba(167,139,250,0.1);color:var(--violet);">make</span><span class="route-path">test</span></div>
+          <div class="api-route"><span class="method get" style="min-width:60px;background:rgba(167,139,250,0.1);color:var(--violet);">make</span><span class="route-path">migrate</span></div>
+          <div class="api-route"><span class="method get" style="min-width:60px;background:rgba(167,139,250,0.1);color:var(--violet);">make</span><span class="route-path">coverage-rust</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
